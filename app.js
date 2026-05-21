@@ -10,10 +10,10 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ── DB routes ─────────────────────────────────────────────────────────────────
+// DB routes
 app.use('/api/db', dbRoutes);
 
-// ── List available templates ──────────────────────────────────────────────────
+// List available templates
 app.get('/api/templates', (_req, res) => {
   const VALID_EXT = ['.json', '.js', ''];
   const read = (dir) =>
@@ -21,7 +21,6 @@ app.get('/api/templates', (_req, res) => {
       .filter(f => VALID_EXT.includes(path.extname(f)))
       .map(f => {
         const name = path.basename(f, path.extname(f));
-        // Lees outputs count uit de JSON
         let outputs = 1;
         try {
           const ext  = path.extname(f);
@@ -39,19 +38,20 @@ app.get('/api/templates', (_req, res) => {
   });
 });
 
-// ── Generate flow + SQL ───────────────────────────────────────────────────────
+// Generate flow + SQL
 app.post('/api/generate', (req, res) => {
   try {
     const flow = generateFlow(req.body);
 
-    // SQL genereren als er een DB + building geselecteerd is
     let sql = null;
     let enerseeSQL = null;
     if (req.body.selectedDb && req.body.buildingId) {
       const params = {
-        gatewayAssetId: req.body.gatewayAssetId,
-        buildingId:     req.body.buildingId,
-        devices:        req.body.devices,
+        gatewayAssetId:      req.body.gatewayAssetId,
+        gatewayMeterAssetId: req.body.gatewayMeterAssetId,
+        gatewayMeterNaam:    req.body.gatewayMeterNaam,
+        buildingId:          req.body.buildingId,
+        devices:             req.body.devices,
       };
       sql        = buildSQL(req.body.selectedDb, params);
       enerseeSQL = buildEnerseeSQL(req.body.selectedDb, params);
@@ -66,5 +66,5 @@ app.post('/api/generate', (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`\n🚀  Vlegelbox Generator  →  http://localhost:${PORT}\n`);
+  console.log(`\nVlegelbox Generator  ->  http://localhost:${PORT}\n`);
 });

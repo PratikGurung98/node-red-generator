@@ -6,400 +6,81 @@
   <title>Vlegelbox Generator</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      background: #0f1117;
-      color: #e2e8f0;
-      min-height: 100vh;
-    }
-
-    header {
-      background: #1a1d2e;
-      border-bottom: 1px solid #2d3148;
-      padding: 16px 32px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    header h1 {
-      font-size: 18px;
-      font-weight: 600;
-      color: #fff;
-    }
-
-    header span {
-      font-size: 12px;
-      color: #64748b;
-      background: #1e2235;
-      border: 1px solid #2d3148;
-      padding: 2px 8px;
-      border-radius: 4px;
-    }
-
-    .container {
-      max-width: 860px;
-      margin: 0 auto;
-      padding: 32px 24px;
-    }
-
-    .section-title {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: #64748b;
-      margin-bottom: 12px;
-    }
-
-    .card {
-      background: #1a1d2e;
-      border: 1px solid #2d3148;
-      border-radius: 10px;
-      padding: 20px;
-      margin-bottom: 20px;
-    }
-
-    label {
-      display: block;
-      font-size: 13px;
-      color: #94a3b8;
-      margin-bottom: 6px;
-      margin-top: 14px;
-    }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; }
+    header { background: #1a1d2e; border-bottom: 1px solid #2d3148; padding: 16px 32px; display: flex; align-items: center; gap: 16px; }
+    header h1 { font-size: 18px; font-weight: 600; color: #fff; }
+    header span { font-size: 12px; color: #64748b; background: #1e2235; border: 1px solid #2d3148; padding: 2px 8px; border-radius: 4px; }
+    .container { max-width: 860px; margin: 0 auto; padding: 32px 24px; }
+    .section-title { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #64748b; margin-bottom: 12px; }
+    .card { background: #1a1d2e; border: 1px solid #2d3148; border-radius: 10px; padding: 20px; margin-bottom: 20px; }
+    label { display: block; font-size: 13px; color: #94a3b8; margin-bottom: 6px; margin-top: 14px; }
     label:first-of-type { margin-top: 0; }
-
-    input, select {
-      width: 100%;
-      background: #0f1117;
-      border: 1px solid #2d3148;
-      border-radius: 6px;
-      color: #e2e8f0;
-      padding: 9px 12px;
-      font-size: 14px;
-      outline: none;
-      transition: border-color .15s;
-    }
+    input, select { width: 100%; background: #0f1117; border: 1px solid #2d3148; border-radius: 6px; color: #e2e8f0; padding: 9px 12px; font-size: 14px; outline: none; transition: border-color .15s; }
     input:focus, select:focus { border-color: #4f6ef7; }
     input::placeholder { color: #374151; }
-
     select option { background: #1a1d2e; }
-
-    /* Devices */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     #devices { display: flex; flex-direction: column; gap: 12px; }
-
-    .device-card {
-      background: #0f1117;
-      border: 1px solid #2d3148;
-      border-radius: 8px;
-      padding: 16px;
-      position: relative;
-    }
-
-    .device-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 14px;
-    }
-
-    .device-num {
-      font-size: 11px;
-      font-weight: 700;
-      color: #64748b;
-      background: #1a1d2e;
-      border: 1px solid #2d3148;
-      border-radius: 4px;
-      padding: 2px 8px;
-      letter-spacing: 0.05em;
-    }
-
-    .comm-badge {
-      font-size: 11px;
-      font-weight: 600;
-      padding: 2px 8px;
-      border-radius: 4px;
-    }
+    .device-card { background: #0f1117; border: 1px solid #2d3148; border-radius: 8px; padding: 16px; position: relative; }
+    .device-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .device-num { font-size: 11px; font-weight: 700; color: #64748b; background: #1a1d2e; border: 1px solid #2d3148; border-radius: 4px; padding: 2px 8px; letter-spacing: 0.05em; }
+    .comm-badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; }
     .comm-badge.lorawan { background: #1e3a5f; color: #60a5fa; border: 1px solid #1e4a7a; }
     .comm-badge.modbus  { background: #3b1f47; color: #c084fc; border: 1px solid #4c2960; }
-
-    .device-fields {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
+    .device-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .device-fields .full { grid-column: 1 / -1; }
-
-    .remove-btn {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      background: none;
-      border: none;
-      color: #374151;
-      cursor: pointer;
-      font-size: 18px;
-      line-height: 1;
-      transition: color .15s;
-    }
+    .remove-btn { position: absolute; top: 12px; right: 12px; background: none; border: none; color: #374151; cursor: pointer; font-size: 18px; line-height: 1; transition: color .15s; }
     .remove-btn:hover { color: #ef4444; }
-
-    /* Add device buttons */
-    .add-btns {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 24px;
-    }
-
-    .add-btn {
-      flex: 1;
-      border: 1px dashed #2d3148;
-      background: transparent;
-      border-radius: 8px;
-      padding: 12px;
-      cursor: pointer;
-      font-size: 13px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      transition: all .15s;
-    }
+    .add-btns { display: flex; gap: 10px; margin-bottom: 24px; }
+    .add-btn { flex: 1; border: 1px dashed #2d3148; background: transparent; border-radius: 8px; padding: 12px; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all .15s; }
     .add-btn.lorawan { color: #60a5fa; }
     .add-btn.lorawan:hover { background: #1e3a5f22; border-color: #3b82f6; }
     .add-btn.modbus  { color: #c084fc; }
     .add-btn.modbus:hover  { background: #3b1f4722; border-color: #a855f7; }
-
-    /* Generate button */
-    .generate-btn {
-      width: 100%;
-      background: #4f6ef7;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      padding: 14px;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background .15s;
-      letter-spacing: 0.02em;
-    }
+    .generate-btn { width: 100%; background: #4f6ef7; color: #fff; border: none; border-radius: 8px; padding: 14px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background .15s; letter-spacing: 0.02em; }
     .generate-btn:hover { background: #3b5bdb; }
     .generate-btn:disabled { background: #2d3148; color: #64748b; cursor: not-allowed; }
-
-    /* Output */
-    #output {
-      margin-top: 20px;
-      display: none;
-    }
-
-    .output-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 12px;
-    }
-
-    .success-badge {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 14px;
-      font-weight: 600;
-      color: #4ade80;
-    }
-
-    .download-btn {
-      background: #166534;
-      color: #4ade80;
-      border: 1px solid #15803d;
-      border-radius: 6px;
-      padding: 8px 16px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background .15s;
-    }
+    #output { margin-top: 20px; display: none; }
+    .output-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+    .success-badge { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #4ade80; }
+    .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+    .download-btn { background: #166534; color: #4ade80; border: 1px solid #15803d; border-radius: 6px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s; white-space: nowrap; }
     .download-btn:hover { background: #15803d; }
-
-    pre {
-      background: #0a0d14;
-      border: 1px solid #1e2235;
-      border-radius: 8px;
-      padding: 16px;
-      font-size: 12px;
-      overflow-x: auto;
-      color: #94a3b8;
-      max-height: 320px;
-      overflow-y: auto;
-      line-height: 1.5;
-    }
-
-    .error-msg {
-      background: #3b0f0f;
-      border: 1px solid #7f1d1d;
-      color: #fca5a5;
-      border-radius: 8px;
-      padding: 14px;
-      font-size: 13px;
-    }
-
-    .stats {
-      display: flex;
-      gap: 16px;
-      margin-bottom: 16px;
-    }
-    .stat {
-      background: #1a1d2e;
-      border: 1px solid #2d3148;
-      border-radius: 6px;
-      padding: 8px 14px;
-      font-size: 13px;
-    }
+    pre { background: #0a0d14; border: 1px solid #1e2235; border-radius: 8px; padding: 16px; font-size: 12px; overflow-x: auto; color: #94a3b8; max-height: 320px; overflow-y: auto; line-height: 1.5; }
+    .error-msg { background: #3b0f0f; border: 1px solid #7f1d1d; color: #fca5a5; border-radius: 8px; padding: 14px; font-size: 13px; }
+    .stats { display: flex; gap: 16px; margin-bottom: 16px; }
+    .stat { background: #1a1d2e; border: 1px solid #2d3148; border-radius: 6px; padding: 8px 14px; font-size: 13px; }
     .stat strong { color: #fff; }
     .stat span { color: #64748b; font-size: 11px; margin-left: 4px; }
-    .db-status {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 12px;
-      padding: 3px 10px;
-      border-radius: 20px;
-      margin-left: 10px;
-    }
+    .db-status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 3px 10px; border-radius: 20px; margin-left: 10px; }
     .db-status.ok  { background: #14532d; color: #4ade80; }
     .db-status.err { background: #3b0f0f; color: #fca5a5; }
-
     .search-select-wrap { position: relative; }
-    .search-select-wrap input {
-      width: 100%;
-      background: #0f1117;
-      border: 1px solid #2d3148;
-      border-radius: 6px 6px 0 0;
-      color: #e2e8f0;
-      padding: 9px 12px;
-      font-size: 14px;
-    }
-    .search-select-wrap select {
-      border-radius: 0 0 6px 6px;
-      border-top: none;
-      max-height: 180px;
-    }
-    .cat-row {
-      display: flex;
-      gap: 16px;
-      margin-bottom: 8px;
-      flex-wrap: wrap;
-    }
-    .cat-radio {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 13px;
-      color: #94a3b8;
-      cursor: pointer;
-    }
+    .search-select-wrap input { width: 100%; background: #0f1117; border: 1px solid #2d3148; border-radius: 6px 6px 0 0; color: #e2e8f0; padding: 9px 12px; font-size: 14px; }
+    .search-select-wrap select { border-radius: 0 0 6px 6px; border-top: none; max-height: 180px; }
+    .cat-row { display: flex; gap: 16px; margin-bottom: 8px; flex-wrap: wrap; }
+    .cat-radio { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #94a3b8; cursor: pointer; }
     .cat-radio input { width: auto; cursor: pointer; }
     .cat-panel { margin-top: 4px; }
-    .api-checks {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    .api-check-item {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      background: #1a1d2e;
-      border: 1px solid #2d3148;
-      border-radius: 6px;
-      padding: 5px 10px;
-      font-size: 12px;
-      color: #94a3b8;
-      cursor: pointer;
-    }
+    .api-checks { display: flex; flex-wrap: wrap; gap: 8px; }
+    .api-check-item { display: flex; align-items: center; gap: 5px; background: #1a1d2e; border: 1px solid #2d3148; border-radius: 6px; padding: 5px 10px; font-size: 12px; color: #94a3b8; cursor: pointer; }
     .api-check-item input { width: auto; cursor: pointer; }
-    .api-check-item:has(input:checked) {
-      border-color: #4f6ef7;
-      color: #a5b4fc;
-      background: #1e2245;
-    }
-    .enersee-section {
-      margin-top: 12px;
-      border-top: 1px solid #2d3148;
-      padding-top: 12px;
-    }
-    .enersee-title {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: #a78bfa;
-      margin-bottom: 10px;
-    }
-    .dt-row {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 10px;
-      background: #0f1117;
-      border: 1px solid #2d3148;
-      border-radius: 6px;
-      padding: 10px 12px;
-      margin-bottom: 6px;
-    }
-    .dt-info {
-      flex: 1;
-      min-width: 160px;
-    }
+    .api-check-item:has(input:checked) { border-color: #4f6ef7; color: #a5b4fc; background: #1e2245; }
+    .enersee-section { margin-top: 12px; border-top: 1px solid #2d3148; padding-top: 12px; }
+    .enersee-title { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #a78bfa; margin-bottom: 10px; }
+    .dt-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; background: #0f1117; border: 1px solid #2d3148; border-radius: 6px; padding: 10px 12px; margin-bottom: 6px; }
+    .dt-info { flex: 1; min-width: 160px; }
     .dt-name { font-size: 13px; font-weight: 600; color: #e2e8f0; }
     .dt-meta { font-size: 11px; color: #64748b; margin-top: 2px; }
-    .dt-config {
-      display: flex;
-      gap: 8px;
-      flex: 2;
-      min-width: 280px;
-      flex-wrap: wrap;
-    }
-    .dt-config select, .dt-config input {
-      flex: 1;
-      min-width: 120px;
-      font-size: 12px;
-      padding: 6px 8px;
-    }
-    .toggle-wrap {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 12px;
-      color: #64748b;
-      white-space: nowrap;
-    }
+    .dt-config { display: flex; gap: 8px; flex: 2; min-width: 280px; flex-wrap: wrap; }
+    .dt-config select, .dt-config input { flex: 1; min-width: 120px; font-size: 12px; padding: 6px 8px; }
+    .toggle-wrap { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748b; white-space: nowrap; }
     .toggle-wrap input[type=checkbox] { width: auto; cursor: pointer; }
-
-    /* Searchable combo */
     .combo-wrap { position: relative; }
     .combo-wrap input { border-radius: 6px; }
-    .combo-drop {
-      display: none;
-      position: absolute;
-      z-index: 100;
-      width: 100%;
-      background: #1a1d2e;
-      border: 1px solid #4f6ef7;
-      border-top: none;
-      border-radius: 0 0 6px 6px;
-      max-height: 200px;
-      overflow-y: auto;
-    }
+    .combo-drop { display: none; position: absolute; z-index: 100; width: 100%; background: #1a1d2e; border: 1px solid #4f6ef7; border-top: none; border-radius: 0 0 6px 6px; max-height: 200px; overflow-y: auto; }
     .combo-drop.open { display: block; }
-    .combo-opt {
-      padding: 8px 12px;
-      font-size: 13px;
-      cursor: pointer;
-      color: #e2e8f0;
-    }
+    .combo-opt { padding: 8px 12px; font-size: 13px; cursor: pointer; color: #e2e8f0; }
     .combo-opt:hover { background: #2d3148; }
     .combo-opt.selected { background: #1e2245; color: #a5b4fc; }
   </style>
@@ -407,7 +88,7 @@
 <body>
 
 <header>
-  <h1>⚡ Vlegelbox Generator</h1>
+  <h1>Vlegelbox Generator</h1>
   <span>AI Acceleration Labs</span>
 </header>
 
@@ -423,7 +104,7 @@
     <div id="dbStatus" style="margin-top:8px;min-height:20px"></div>
   </div>
 
-  <!-- Building selectie (verschijnt na DB keuze) -->
+  <!-- Building selectie -->
   <div id="buildingSection" style="display:none">
     <div class="section-title">Locatie</div>
     <div class="card">
@@ -442,10 +123,21 @@
   <div class="section-title">Box configuratie</div>
   <div class="card">
     <label>Box naam / Device ID (Azure IoT Hub)</label>
-    <input type="text" id="boxName"
-      placeholder="E05_04_2025_Bulk_bestelling_Vlegelbox_Batch_2_Merbraine_BOX1">
-    <label>Gateway Asset ID <span style="color:#374151;font-size:11px">(voor node-redSTART heartbeat)</span></label>
-    <input type="text" id="gatewayAssetId" placeholder="360029042026125000">
+    <input type="text" id="boxName" placeholder="E05_04_2025_Bulk_bestelling_Vlegelbox_Batch_2_Merbraine_BOX1">
+
+    <div class="grid-2" style="margin-top:0">
+      <div>
+        <label>Vlegelbox Asset ID <span style="color:#374151;font-size:11px">(voor de gateway table)</span></label>
+        <input type="text" id="gatewayAssetId" placeholder="362025051912254662">
+      </div>
+      <div>
+        <label>Gateway Meter Asset ID <span style="color:#374151;font-size:11px">(voor Node-RED + meter in DB)</span></label>
+        <input type="text" id="gatewayMeterAssetId" placeholder="360029042026125000">
+      </div>
+    </div>
+
+    <label>Gateway Meter naam <span style="color:#374151;font-size:11px">(ReadableName in dbo.Meters)</span></label>
+    <input type="text" id="gatewayMeterNaam" placeholder="bv. Gateway UG56 BOX1">
   </div>
 
   <!-- Devices -->
@@ -453,18 +145,14 @@
   <div id="devices"></div>
 
   <div class="add-btns">
-    <button class="add-btn lorawan" onclick="addDevice('lorawan')">
-      📡 + LoRaWAN device
-    </button>
-    <button class="add-btn modbus" onclick="addDevice('modbus')">
-      🔌 + Modbus device
-    </button>
+    <button class="add-btn lorawan" onclick="addDevice('lorawan')">+ LoRaWAN device</button>
+    <button class="add-btn modbus"  onclick="addDevice('modbus')">+ Modbus device</button>
   </div>
 
-  <!-- Generate -->
+  <!-- Generate buttons -->
   <div style="display:flex;gap:10px;margin-bottom:20px">
-    <button class="generate-btn" onclick="generate()" style="flex:2">Generate Node-RED Flow →</button>
-    <button class="generate-btn" onclick="generateSQL()" style="flex:1;background:#1e3a5f;color:#60a5fa">🗄️ Generate SQL</button>
+    <button class="generate-btn" onclick="generate()" style="flex:2">Generate Node-RED Flow</button>
+    <button class="generate-btn" id="sqlBtn" onclick="generateSQL()" style="flex:1;background:#1e3a5f;color:#60a5fa">Generate SQL</button>
   </div>
 
   <!-- Output -->
@@ -474,57 +162,49 @@
 </div>
 
 <script>
-  let templates     = { lorawan: [], modbus: [] };
-  let deviceCount   = 0;
-  let lastFlow      = null;
-  let lastSQL       = null;
+  let templates      = { lorawan: [], modbus: [] };
+  let deviceCount    = 0;
+  let lastFlow       = null;
+  let lastSQL        = null;
   let lastEnerseeSQL = null;
-  let allBuildings  = [];   // { Id, Name }
-  let allMeterTypes     = [];   // { Id, Name, Tag }
-  let allMeterTypeLinks = [];   // { DataTypesId, MeterTypesId }
-  let allDataTypes      = [];   // { Id, Name, Category, ... }
-  let selectedDb    = null;
+  let allBuildings      = [];
+  let allMeterTypes     = [];
+  let allMeterTypeLinks = [];
+  let allDataTypes      = [];
+  let categories = { api: [], delhaize: [], enerseeCategories: [], enerseeNames: [] };
 
   // ── Init ──────────────────────────────────────────────────────────────────
 
   async function init() {
-    // Templates + categories parallel laden
     const [t] = await Promise.all([
       fetch('/api/templates').then(r => r.json()),
       loadCategories(),
     ]);
     templates = t;
 
-    // DBs laden uit config
     const d = await fetch('/api/db/list').then(r => r.json());
     const sel = document.getElementById('dbSelect');
     (d.databases || []).forEach(db => {
       const opt = document.createElement('option');
       opt.value = db.label;
-      opt.textContent = db.label + (db.default ? ' ★' : '');
+      opt.textContent = db.label + (db.default ? ' (standaard)' : '');
       sel.appendChild(opt);
       if (db.default) sel.value = db.label;
     });
 
-    // Auto-load default DB
     if (sel.value) await onDbChange();
   }
 
-  // ── DB wisselen ───────────────────────────────────────────────────────────
+  // ── DB ────────────────────────────────────────────────────────────────────
 
   async function onDbChange() {
     const label = document.getElementById('dbSelect').value;
     const status = document.getElementById('dbStatus');
+    if (!label) { document.getElementById('buildingSection').style.display = 'none'; return; }
 
-    if (!label) {
-      document.getElementById('buildingSection').style.display = 'none';
-      return;
-    }
-
-    status.innerHTML = `<span style="color:#64748b;font-size:12px">⏳ Verbinden...</span>`;
+    status.innerHTML = `<span style="color:#64748b;font-size:12px">Verbinden...</span>`;
 
     try {
-      // Test + buildings + metertypes + datatypes parallel laden
       const [testRes, buildRes, mtRes, dtRes, mlRes] = await Promise.all([
         fetch(`/api/db/test/${encodeURIComponent(label)}`).then(r => r.json()),
         fetch(`/api/db/${encodeURIComponent(label)}/buildings`).then(r => r.json()),
@@ -535,28 +215,25 @@
 
       if (!testRes.ok) throw new Error(testRes.error);
 
-      // Sla alles op
-      allBuildings      = buildRes.buildings    || [];
-      allMeterTypes     = mtRes.meterTypes      || [];
-      allMeterTypeLinks = mlRes.meterTypeLinks  || [];
-      allDataTypes      = dtRes.dataTypes       || [];
+      allBuildings      = buildRes.buildings   || [];
+      allMeterTypes     = mtRes.meterTypes     || [];
+      allMeterTypeLinks = mlRes.meterTypeLinks || [];
+      allDataTypes      = dtRes.dataTypes      || [];
 
-      status.innerHTML = `<span class="db-status ok">✅ Verbonden · ${new Date(testRes.serverTime).toLocaleTimeString()} · ${allMeterTypes.length} types · ${allDataTypes.length} datatypes</span>`;
+      status.innerHTML = `<span class="db-status ok">Verbonden &middot; ${new Date(testRes.serverTime).toLocaleTimeString()} &middot; ${allMeterTypes.length} types &middot; ${allDataTypes.length} datatypes</span>`;
 
       renderBuildings();
       document.getElementById('buildingSection').style.display = 'block';
 
-      // Label aanpassen per schema
       const isMoonfish = label.toLowerCase().includes('moonfish');
       document.getElementById('buildingLabel').textContent = isMoonfish ? 'Tenant' : 'Gebouw';
       document.getElementById('buildingSearch').placeholder = isMoonfish ? 'Zoek tenant...' : 'Zoek gebouw...';
 
-      // Update alle decoder + metertype combos
       updateAllDecoderCombos();
       updateAllMeterTypeCombos();
 
     } catch (err) {
-      status.innerHTML = `<span class="db-status err">❌ ${err.message}</span>`;
+      status.innerHTML = `<span class="db-status err">Fout: ${err.message}</span>`;
     }
   }
 
@@ -567,59 +244,42 @@
     const filtered = filter
       ? allBuildings.filter(b => b.Name.toLowerCase().includes(filter.toLowerCase()))
       : allBuildings;
-
-    sel.innerHTML = filtered
-      .map(b => `<option value="${b.Id}">${b.Name}</option>`)
-      .join('');
+    sel.innerHTML = filtered.map(b => `<option value="${b.Id}">${b.Name}</option>`).join('');
   }
 
   function filterBuildings() {
-    const q = document.getElementById('buildingSearch').value;
-    renderBuildings(q);
+    renderBuildings(document.getElementById('buildingSearch').value);
     document.getElementById('selectedBuilding').textContent = '';
   }
 
   document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('buildingSelect')?.addEventListener('change', e => {
       const opt = e.target.selectedOptions[0];
-      document.getElementById('selectedBuilding').textContent =
-        opt ? `✓ Geselecteerd: ${opt.textContent}` : '';
+      document.getElementById('selectedBuilding').textContent = opt ? `Geselecteerd: ${opt.textContent}` : '';
     });
   });
 
-  function getSelectedBuilding() {
-    const sel = document.getElementById('buildingSelect');
-    return sel.value ? { id: sel.value, name: sel.selectedOptions[0]?.textContent } : null;
-  }
+  // ── Categories ────────────────────────────────────────────────────────────
 
-  // ── MeterType dropdowns ───────────────────────────────────────────────────
-
-  function updateAllMeterTypeDropdowns() {
-    document.querySelectorAll('.metertype-select').forEach(updateMeterTypeDropdown);
-  }
-
-  let categories = { api: [], delhaize: [] };
-
-  // Categories laden bij init
   async function loadCategories() {
     const r = await fetch('/api/db/categories').then(r => r.json());
     categories = {
-      api:              r.api              || [],
-      delhaize:         r.delhaize         || [],
+      api:               r.api               || [],
+      delhaize:          r.delhaize          || [],
       enerseeCategories: r.enerseeCategories || [],
-      enerseeNames:     r.enerseeNames     || [],
+      enerseeNames:      r.enerseeNames      || [],
     };
   }
 
   function onCatMode(idx) {
     const mode = document.querySelector(`input[name="catMode_${idx}"]:checked`)?.value;
-    document.getElementById(`cat-api-${idx}`)?.style.setProperty('display', mode === 'api' ? 'block' : 'none');
-    document.getElementById(`cat-delhaize-${idx}`)?.style.setProperty('display', mode === 'delhaize' ? 'block' : 'none');
-    document.getElementById(`cat-custom-${idx}`)?.style.setProperty('display', mode === 'custom' ? 'block' : 'none');
+    ['api','delhaize','custom'].forEach(m => {
+      const el = document.getElementById(`cat-${m}-${idx}`);
+      if (el) el.style.display = mode === m ? 'block' : 'none';
+    });
   }
 
   function fillCategoryPanels(idx) {
-    // API checkboxes
     const apiDiv = document.getElementById(`api-checks-${idx}`);
     if (apiDiv) {
       apiDiv.innerHTML = categories.api.map(c => `
@@ -627,8 +287,6 @@
           <input type="checkbox" name="catApi" value="${c.value}"> ${c.label} <span style="color:#374151">${c.value}</span>
         </label>`).join('');
     }
-
-    // Delhaize dropdown
     const dlSel = document.querySelector(`#device-${idx} [name="catDelhaize"]`);
     if (dlSel) {
       dlSel.innerHTML = `<option value="">— kies categorie —</option>` +
@@ -638,20 +296,17 @@
 
   function getMeterCategory(idx) {
     const mode = document.querySelector(`input[name="catMode_${idx}"]:checked`)?.value || 'none';
-    if (mode === 'none') return null;
-    if (mode === 'custom') {
-      return document.querySelector(`#device-${idx} [name="catCustom"]`)?.value?.trim() || null;
-    }
-    if (mode === 'delhaize') {
-      return document.querySelector(`#device-${idx} [name="catDelhaize"]`)?.value || null;
-    }
+    if (mode === 'none')     return null;
+    if (mode === 'custom')   return document.querySelector(`#device-${idx} [name="catCustom"]`)?.value?.trim() || null;
+    if (mode === 'delhaize') return document.querySelector(`#device-${idx} [name="catDelhaize"]`)?.value || null;
     if (mode === 'api') {
-      const checked = [...document.querySelectorAll(`#device-${idx} [name="catApi"]:checked`)]
-        .map(cb => cb.value);
-      return checked.length ? checked.join('') : null;  // bv. [TEMP][WP]
+      const checked = [...document.querySelectorAll(`#device-${idx} [name="catApi"]:checked`)].map(cb => cb.value);
+      return checked.length ? checked.join('') : null;
     }
     return null;
   }
+
+  // ── Device cards ──────────────────────────────────────────────────────────
 
   function addDevice(commType) {
     deviceCount++;
@@ -666,7 +321,7 @@
     const identifierName        = commType === 'lorawan' ? 'deveui' : 'slaveAddress';
 
     div.innerHTML = `
-      <button class="remove-btn" onclick="removeDevice(${idx})" title="Verwijder">×</button>
+      <button class="remove-btn" onclick="removeDevice(${idx})" title="Verwijder">&times;</button>
       <div class="device-header">
         <span class="device-num">DEVICE ${idx}</span>
         <span class="comm-badge ${commType}">${commType.toUpperCase()}</span>
@@ -676,7 +331,7 @@
           <label>Decoder</label>
           <div class="combo-wrap" id="decoder-combo-${idx}">
             <input type="text" placeholder="Typ om te zoeken..." autocomplete="off"
-              oninput="filterComboInput(this, 'decoder-combo-${idx}')"
+              oninput="filterComboInput(this,'decoder-combo-${idx}')"
               onfocus="openCombo('decoder-combo-${idx}')"
               onblur="setTimeout(()=>closeCombo('decoder-combo-${idx}'),150)">
             <div class="combo-drop" id="decoder-drop-${idx}"></div>
@@ -700,7 +355,7 @@
           <label>MeterType <span style="color:#374151;font-size:11px">(uit DB)</span></label>
           <div class="combo-wrap" id="metertype-combo-${idx}">
             <input type="text" placeholder="Typ om te zoeken..." autocomplete="off"
-              oninput="filterComboInput(this, 'metertype-combo-${idx}')"
+              oninput="filterComboInput(this,'metertype-combo-${idx}')"
               onfocus="openCombo('metertype-combo-${idx}')"
               onblur="setTimeout(()=>closeCombo('metertype-combo-${idx}'),150)">
             <div class="combo-drop" id="metertype-drop-${idx}"></div>
@@ -716,13 +371,9 @@
             <label class="cat-radio"><input type="radio" name="catMode_${idx}" value="delhaize"> Delhaize</label>
             <label class="cat-radio"><input type="radio" name="catMode_${idx}" value="custom"> Custom</label>
           </div>
-          <div id="cat-api-${idx}"      class="cat-panel" style="display:none">
-            <div class="api-checks" id="api-checks-${idx}"></div>
-          </div>
+          <div id="cat-api-${idx}"      class="cat-panel" style="display:none"><div class="api-checks" id="api-checks-${idx}"></div></div>
           <div id="cat-delhaize-${idx}" class="cat-panel" style="display:none">
-            <select name="catDelhaize">
-              <option value="">— kies categorie —</option>
-            </select>
+            <select name="catDelhaize"><option value="">— kies categorie —</option></select>
           </div>
           <div id="cat-custom-${idx}"   class="cat-panel" style="display:none">
             <input type="text" name="catCustom" placeholder="bv. COOLING_CUSTOM">
@@ -731,15 +382,13 @@
         <div class="full" style="border-top:1px solid #2d3148;padding-top:12px;margin-top:4px">
           <div class="cat-row" style="margin-bottom:0">
             <label class="cat-radio" style="color:#a78bfa">
-              <input type="checkbox" id="enersee-toggle-${idx}"> 🔮 Enersee configureren
+              <input type="checkbox" id="enersee-toggle-${idx}"> Enersee configureren
             </label>
           </div>
           <div id="cat-enersee-${idx}" class="cat-panel" style="display:none">
             <div class="enersee-section">
               <div class="enersee-title">Enersee DataTypes</div>
-              <div id="enersee-datatypes-${idx}" style="color:#64748b;font-size:12px">
-                ← Selecteer eerst een MeterType
-              </div>
+              <div id="enersee-datatypes-${idx}" style="color:#64748b;font-size:12px">Selecteer eerst een MeterType</div>
             </div>
           </div>
         </div>
@@ -748,36 +397,27 @@
 
     document.getElementById('devices').appendChild(div);
 
-    // Event listeners radio buttons
     div.querySelectorAll(`input[name="catMode_${idx}"]`).forEach(radio => {
       radio.addEventListener('change', () => onCatMode(idx));
     });
 
-    // Enersee toggle — aparte checkbox
     div.querySelector(`#enersee-toggle-${idx}`)?.addEventListener('change', function() {
       const panel = document.getElementById(`cat-enersee-${idx}`);
       if (panel) panel.style.display = this.checked ? 'block' : 'none';
       if (this.checked) onMeterTypeSelected(idx);
     });
 
-    // Decoder combo vullen
-    const decoderOpts = (templates[commType] || []).map(t => ({
-      value: t.name, label: `${t.name}${t.outputs > 1 ? ` (${t.outputs} outputs)` : ''}`, outputs: t.outputs || 1,
-    }));
-    renderCombo(`decoder-combo-${idx}`, decoderOpts, `decoder-val-${idx}`, `decoder-outputs-${idx}`);
+    renderCombo(`decoder-combo-${idx}`,
+      (templates[commType] || []).map(t => ({
+        value: t.name, label: `${t.name}${t.outputs > 1 ? ` (${t.outputs} outputs)` : ''}`, outputs: t.outputs || 1,
+      })),
+      `decoder-val-${idx}`, `decoder-outputs-${idx}`);
 
-    // MeterType combo vullen
     fillMeterTypeCombo(idx);
-
-    // Category panels vullen
     fillCategoryPanels(idx);
   }
 
-  // ── Combo box (searchable) ────────────────────────────────────────────────
-
-  function buildComboOptions(items, valueKey, labelFn) {
-    return items.map(item => ({ value: String(item[valueKey]), label: labelFn(item) }));
-  }
+  // ── Combo box ─────────────────────────────────────────────────────────────
 
   function renderCombo(wrapId, options, hiddenId, outputsId) {
     const drop = document.getElementById(wrapId.replace('combo', 'drop'));
@@ -790,13 +430,8 @@
     ).join('');
   }
 
-  function openCombo(wrapId) {
-    document.getElementById(wrapId.replace('combo','drop'))?.classList.add('open');
-  }
-
-  function closeCombo(wrapId) {
-    document.getElementById(wrapId.replace('combo','drop'))?.classList.remove('open');
-  }
+  function openCombo(wrapId)  { document.getElementById(wrapId.replace('combo','drop'))?.classList.add('open'); }
+  function closeCombo(wrapId) { document.getElementById(wrapId.replace('combo','drop'))?.classList.remove('open'); }
 
   function filterComboInput(input, wrapId) {
     const q    = input.value.toLowerCase();
@@ -812,14 +447,12 @@
     const drop   = document.getElementById(wrapId.replace('combo','drop'));
     const hidden = document.getElementById(hiddenId);
     if (!drop || !hidden) return;
-    const opts = drop._options || [];
-    const opt  = opts[optIdx];
+    const opt = (drop._options || [])[optIdx];
     if (!opt) return;
 
     hidden.value = opt.value;
-
-    const wrap = document.getElementById(wrapId);
-    if (wrap) wrap.querySelector('input[type=text]').value = opt.label;
+    document.getElementById(wrapId)?.querySelector('input[type=text]')?.setAttribute('value', opt.label);
+    document.getElementById(wrapId)?.querySelector('input[type=text]') && (document.getElementById(wrapId).querySelector('input[type=text]').value = opt.label);
 
     if (outputsId) {
       const outEl = document.getElementById(outputsId);
@@ -828,7 +461,6 @@
       if (idxMatch) onTemplateChange(parseInt(idxMatch[1]), opt.outputs || 1);
     }
 
-    // Direct aanroepen als het een metertype is
     const mtMatch = hiddenId.match(/metertype-val-(\d+)/);
     if (mtMatch) onMeterTypeSelected(parseInt(mtMatch[1]));
 
@@ -837,15 +469,14 @@
 
   function updateAllDecoderCombos() {
     document.querySelectorAll('[id^="decoder-combo-"]').forEach(wrap => {
-      const idx     = wrap.id.split('-')[2];
+      const idx      = wrap.id.split('-')[2];
       const commType = document.getElementById(`device-${idx}`)?.dataset?.commType;
       if (!commType) return;
-      const opts = (templates[commType] || []).map(t => ({
-        value:   t.name,
-        label:   `${t.name}${t.outputs > 1 ? ` (${t.outputs} outputs)` : ''}`,
-        outputs: t.outputs || 1,
-      }));
-      renderCombo(wrap.id, opts, `decoder-val-${idx}`, `decoder-outputs-${idx}`);
+      renderCombo(wrap.id,
+        (templates[commType] || []).map(t => ({
+          value: t.name, label: `${t.name}${t.outputs > 1 ? ` (${t.outputs} outputs)` : ''}`, outputs: t.outputs || 1,
+        })),
+        `decoder-val-${idx}`, `decoder-outputs-${idx}`);
     });
   }
 
@@ -857,25 +488,20 @@
   }
 
   function fillMeterTypeCombo(idx) {
-    const opts = allMeterTypes.map(mt => ({
-      value: String(mt.Id),
-      label: `${mt.Name} (${mt.Tag})`,
-    }));
-    renderCombo(`metertype-combo-${idx}`, opts, `metertype-val-${idx}`);
+    renderCombo(`metertype-combo-${idx}`,
+      allMeterTypes.map(mt => ({ value: String(mt.Id), label: `${mt.Name} (${mt.Tag})` })),
+      `metertype-val-${idx}`);
   }
 
-  // ── MeterType geselecteerd → DataTypes voor Enersee ──────────────────────
+  // ── MeterType -> Enersee DataTypes ────────────────────────────────────────
 
   function onMeterTypeSelected(idx) {
     const meterTypeId = document.getElementById(`metertype-val-${idx}`)?.value;
     const enerseeDiv  = document.getElementById(`enersee-datatypes-${idx}`);
-
-    console.log(`onMeterTypeSelected idx=${idx} meterTypeId=${meterTypeId} links=${allMeterTypeLinks.length} dts=${allDataTypes.length}`);
-
-    if (!enerseeDiv) { console.warn('enerseeDiv niet gevonden'); return; }
+    if (!enerseeDiv) return;
 
     if (!meterTypeId) {
-      enerseeDiv.innerHTML = `<span style="color:#64748b;font-size:12px">← Selecteer eerst een MeterType</span>`;
+      enerseeDiv.innerHTML = `<span style="color:#64748b;font-size:12px">Selecteer eerst een MeterType</span>`;
       return;
     }
 
@@ -883,26 +509,21 @@
       .filter(l => String(l.MeterTypesId) === String(meterTypeId))
       .map(l => l.DataTypesId);
 
-    console.log(`Gevonden DataTypeIds voor MeterType ${meterTypeId}:`, linkedDtIds);
-
     if (linkedDtIds.length === 0) {
       enerseeDiv.innerHTML = `<span style="color:#64748b;font-size:12px">Geen DataTypes gekoppeld aan dit MeterType</span>`;
       return;
     }
 
-    const linkedDts = linkedDtIds
-      .map(id => allDataTypes.find(dt => dt.Id === id))
-      .filter(Boolean);
+    const linkedDts = linkedDtIds.map(id => allDataTypes.find(dt => dt.Id === id)).filter(Boolean);
 
     enerseeDiv.innerHTML = linkedDts.map(dt => `
       <div class="dt-row" id="dt-row-${idx}-${dt.Id}">
         <div class="dt-info">
           <div class="dt-name">${dt.Name}</div>
-          <div class="dt-meta">${dt.Category || ''} · ${dt.Unit || ''} · ID: ${dt.Id}</div>
+          <div class="dt-meta">${dt.Category || ''} &middot; ${dt.Unit || ''} &middot; ID: ${dt.Id}</div>
         </div>
         <div class="toggle-wrap">
-          <input type="checkbox" id="dt-vis-${idx}-${dt.Id}"
-            onchange="onDtVisibility(${idx}, ${dt.Id})">
+          <input type="checkbox" id="dt-vis-${idx}-${dt.Id}" onchange="onDtVisibility(${idx},${dt.Id})">
           <label for="dt-vis-${idx}-${dt.Id}" style="cursor:pointer">Visible?</label>
         </div>
         <div class="dt-config" id="dt-config-${idx}-${dt.Id}" style="display:none">
@@ -911,7 +532,7 @@
             ${categories.enerseeCategories.map(c => `<option value="${c}">${c}</option>`).join('')}
           </select>
           <select id="dt-name-${idx}-${dt.Id}">
-            <option value="">— EnerseeeName —</option>
+            <option value="">— Enersee naam —</option>
             ${categories.enerseeNames.map(n => `<option value="${n}">${n}</option>`).join('')}
           </select>
         </div>
@@ -925,20 +546,8 @@
     if (configDiv) configDiv.style.display = checked ? 'flex' : 'none';
   }
 
-  function onCatMode(idx) {
-    const mode = document.querySelector(`input[name="catMode_${idx}"]:checked`)?.value;
-    ['api','delhaize','custom'].forEach(m => {
-      const el = document.getElementById(`cat-${m}-${idx}`);
-      if (el) el.style.display = mode === m ? 'block' : 'none';
-    });
-  }
-
-  // ── Collect Enersee data per device ──────────────────────────────────────
-
   function getEnerseeDataTypes(idx) {
-    // Alleen als Enersee toggle aan staat
     if (!document.getElementById(`enersee-toggle-${idx}`)?.checked) return [];
-
     const meterTypeId = document.getElementById(`metertype-val-${idx}`)?.value;
     if (!meterTypeId) return [];
 
@@ -946,63 +555,54 @@
       .filter(l => String(l.MeterTypesId) === meterTypeId)
       .map(l => l.DataTypesId);
 
-    return linkedDtIds
-      .map(dtId => {
-        const vis = document.getElementById(`dt-vis-${idx}-${dtId}`)?.checked;
-        if (!vis) return null;
-        return {
-          dataTypeId: dtId,
-          name:       document.getElementById(`dt-name-${idx}-${dtId}`)?.value || '',
-          category:   document.getElementById(`dt-cat-${idx}-${dtId}`)?.value  || '',
-          visible:    true,
-        };
-      })
-      .filter(Boolean);
+    return linkedDtIds.map(dtId => {
+      const vis = document.getElementById(`dt-vis-${idx}-${dtId}`)?.checked;
+      if (!vis) return null;
+      return {
+        dataTypeId: dtId,
+        name:       document.getElementById(`dt-name-${idx}-${dtId}`)?.value || '',
+        category:   document.getElementById(`dt-cat-${idx}-${dtId}`)?.value  || '',
+        visible:    true,
+      };
+    }).filter(Boolean);
   }
 
-  // ── Old helpers (kept for compat) ─────────────────────────────────────────
-
-  function updateMeterTypeDropdown() {} // vervangen door combo
-  function updateAllMeterTypeDropdowns() { updateAllMeterTypeCombos(); }
+  // ── Template outputs ──────────────────────────────────────────────────────
 
   function onTemplateChange(idx, outputs) {
     const container = document.getElementById(`asset-fields-${idx}`);
     if (!container) return;
-
     let html = '';
     if (outputs === 1) {
-      html = `<label>Asset ID (Dev)</label>
-              <input type="text" name="assetId_0" placeholder="360029042026131259">`;
+      html = `<label>Asset ID (Dev)</label><input type="text" name="assetId_0" placeholder="360029042026131259">`;
     } else {
       for (let i = 0; i < outputs; i++) {
-        html += `<label>Asset ID device ${i + 1}</label>
-                 <input type="text" name="assetId_${i}" placeholder="360029042026...">`;
+        html += `<label>Asset ID device ${i + 1}</label><input type="text" name="assetId_${i}" placeholder="360029042026...">`;
       }
     }
     container.innerHTML = html;
   }
 
   function removeDevice(idx) {
-    const el = document.getElementById(`device-${idx}`);
-    if (el) el.remove();
+    document.getElementById(`device-${idx}`)?.remove();
   }
 
+  // ── Collect devices ───────────────────────────────────────────────────────
+
   function collectDevices() {
-    const cards = document.querySelectorAll('.device-card');
-    return Array.from(cards).map(card => {
+    return Array.from(document.querySelectorAll('.device-card')).map(card => {
       const commType = card.dataset.commType;
-      const idx     = parseInt(card.id.split('-')[1]);
-      const assetInputs = card.querySelectorAll('[name^="assetId_"]');
-      const assetIds = Array.from(assetInputs).map(i => i.value.trim()).filter(Boolean);
+      const idx      = parseInt(card.id.split('-')[1]);
+      const assetIds = Array.from(card.querySelectorAll('[name^="assetId_"]')).map(i => i.value.trim()).filter(Boolean);
       const d = {
         commType,
-        template:          document.getElementById(`decoder-val-${idx}`)?.value?.trim(),
-        assetId:           assetIds[0],
-        assetIds:          assetIds,
-        naam:              card.querySelector('[name="naam"]')?.value?.trim(),
-        meterTypeId:       document.getElementById(`metertype-val-${idx}`)?.value?.trim(),
-        meterCategory:     getMeterCategory(idx),
-        enerseeDataTypes:  getEnerseeDataTypes(idx),
+        template:         document.getElementById(`decoder-val-${idx}`)?.value?.trim(),
+        assetId:          assetIds[0],
+        assetIds,
+        naam:             card.querySelector('[name="naam"]')?.value?.trim(),
+        meterTypeId:      document.getElementById(`metertype-val-${idx}`)?.value?.trim(),
+        meterCategory:    getMeterCategory(idx),
+        enerseeDataTypes: getEnerseeDataTypes(idx),
       };
       if (commType === 'lorawan') {
         d.deveui = card.querySelector('[name="deveui"]')?.value?.trim();
@@ -1013,15 +613,18 @@
     });
   }
 
-  async function generate() {
-    const boxName        = document.getElementById('boxName').value.trim();
-    const gatewayAssetId = document.getElementById('gatewayAssetId').value.trim();
-    const devices        = collectDevices();
-    const btn = document.querySelector('.generate-btn');
-    const out  = document.getElementById('output');
+  // ── Generate flow ─────────────────────────────────────────────────────────
 
-    // Basic validation
-    if (!boxName) { alert('Vul een box naam in.'); return; }
+  async function generate() {
+    const boxName             = document.getElementById('boxName').value.trim();
+    const gatewayAssetId      = document.getElementById('gatewayAssetId').value.trim();
+    const gatewayMeterAssetId = document.getElementById('gatewayMeterAssetId').value.trim();
+    const gatewayMeterNaam    = document.getElementById('gatewayMeterNaam').value.trim();
+    const devices             = collectDevices();
+    const btn = document.querySelector('.generate-btn');
+    const out = document.getElementById('output');
+
+    if (!boxName)           { alert('Vul een box naam in.'); return; }
     if (devices.length === 0) { alert('Voeg minstens 1 device toe.'); return; }
     for (const d of devices) {
       if (!d.template) { alert('Selecteer een template voor elk device.'); return; }
@@ -1041,102 +644,75 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          boxName,
-          gatewayAssetId,
+          boxName, gatewayAssetId, gatewayMeterAssetId, gatewayMeterNaam,
           selectedDb:  document.getElementById('dbSelect').value,
           buildingId:  document.getElementById('buildingSelect').value,
-          devices
+          devices,
         }),
       });
       const data = await resp.json();
 
       if (data.ok) {
-        lastFlow      = data.flow;
-        lastSQL       = data.sql       || lastSQL;       // bewaar als niet meegeleverd
+        lastFlow       = data.flow;
+        lastSQL        = data.sql        || lastSQL;
         lastEnerseeSQL = data.enerseeSQL || lastEnerseeSQL;
-        const nodeCount   = data.flow.length;
+
         const loraCount   = devices.filter(d => d.commType === 'lorawan').length;
         const modbusCount = devices.filter(d => d.commType === 'modbus').length;
 
         out.style.display = 'block';
         out.innerHTML = `
           <div class="output-header">
-            <div class="success-badge">✅ Flow gegenereerd</div>
-            <div style="display:flex;gap:8px">
-              <button class="download-btn" id="copyBtn" onclick="copyClipboard()" style="background:#1e3a5f;color:#60a5fa;border-color:#1e4a7a">📋 Copy JSON</button>
-              <button class="download-btn" onclick="download()">⬇ Download JSON</button>
+            <div class="success-badge">Flow gegenereerd</div>
+            <div class="btn-group">
+              <button class="download-btn" id="copyBtn" onclick="copyClipboard()" style="background:#1e3a5f;color:#60a5fa;border-color:#1e4a7a">Copy JSON</button>
+              <button class="download-btn" onclick="downloadFlow()">Download JSON</button>
             </div>
           </div>
           <div class="stats">
-            <div class="stat"><strong>${nodeCount}</strong><span>nodes</span></div>
+            <div class="stat"><strong>${data.flow.length}</strong><span>nodes</span></div>
             <div class="stat"><strong>${loraCount}</strong><span>LoRaWAN</span></div>
             <div class="stat"><strong>${modbusCount}</strong><span>Modbus</span></div>
           </div>
           <pre>${JSON.stringify(data.flow, null, 2)}</pre>
-          <div style="margin-top:12px; font-size:12px; color:#64748b; line-height:1.8;">
-            📥 Import in Node-RED: hamburger → Import → Clipboard of bestand<br>
-            ⚠️ Update SAS token in de MQTT broker config na import
+          <div style="margin-top:12px;font-size:12px;color:#64748b;line-height:1.8;">
+            Import in Node-RED: hamburger &rarr; Import &rarr; Clipboard of bestand<br>
+            Update SAS token in de MQTT broker config na import
           </div>
         `;
-
-        // SQL apart renderen — blijft staan bij hergenereren
         renderSQLOutput();
       } else {
         out.style.display = 'block';
-        out.innerHTML = `<div class="error-msg">❌ Fout: ${data.error}</div>`;
+        out.innerHTML = `<div class="error-msg">Fout: ${data.error}</div>`;
       }
     } catch (e) {
       out.style.display = 'block';
-      out.innerHTML = `<div class="error-msg">❌ Server fout: ${e.message}</div>`;
+      out.innerHTML = `<div class="error-msg">Server fout: ${e.message}</div>`;
     }
 
     btn.disabled = false;
-    btn.textContent = 'Generate Node-RED Flow →';
+    btn.textContent = 'Generate Node-RED Flow';
   }
 
-  function copySql(elId, btnId) {
-    const sql = document.getElementById(elId)?.textContent;
-    if (!sql) return;
-    navigator.clipboard.writeText(sql).then(() => {
-      const btn = document.getElementById(btnId);
-      if (btn) { btn.textContent = '✅ Gekopieerd!'; setTimeout(() => btn.textContent = btn.textContent.includes('Enersee') ? '📋 Copy Enersee SQL' : '📋 Copy SQL', 2000); }
-    });
-  }
-
-  function copyClipboard() {
-    if (!lastFlow) return;
-    navigator.clipboard.writeText(JSON.stringify(lastFlow, null, 2)).then(() => {
-      const btn = document.getElementById('copyBtn');
-      btn.textContent = '✅ Gekopieerd!';
-      setTimeout(() => btn.textContent = '📋 Copy JSON', 2000);
-    });
-  }
-
-  function download() {
-    if (!lastFlow) return;
-    const boxName = document.getElementById('boxName').value.trim() || 'flow';
-    const blob = new Blob([JSON.stringify(lastFlow, null, 2)], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `${boxName}.json`;
-    a.click();
-  }
+  // ── Generate SQL ──────────────────────────────────────────────────────────
 
   async function generateSQL() {
     const selectedDb = document.getElementById('dbSelect').value;
     const buildingId = document.getElementById('buildingSelect').value;
     if (!selectedDb || !buildingId) { alert('Selecteer eerst een DB en een gebouw.'); return; }
 
-    const btn = document.querySelector('.generate-btn[onclick="generateSQL()"]');
-    if (btn) { btn.disabled = true; btn.textContent = 'Genereren...'; }
+    const btn = document.getElementById('sqlBtn');
+    btn.disabled = true; btn.textContent = 'Genereren...';
 
     try {
       const resp = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          boxName:        document.getElementById('boxName').value.trim(),
-          gatewayAssetId: document.getElementById('gatewayAssetId').value.trim(),
+          boxName:             document.getElementById('boxName').value.trim(),
+          gatewayAssetId:      document.getElementById('gatewayAssetId').value.trim(),
+          gatewayMeterAssetId: document.getElementById('gatewayMeterAssetId').value.trim(),
+          gatewayMeterNaam:    document.getElementById('gatewayMeterNaam').value.trim(),
           selectedDb, buildingId,
           devices: collectDevices(),
         }),
@@ -1149,34 +725,94 @@
     } catch (e) {
       alert('SQL fout: ' + e.message);
     } finally {
-      if (btn) { btn.disabled = false; btn.textContent = '🗄️ Generate SQL'; }
+      btn.disabled = false; btn.textContent = 'Generate SQL';
     }
   }
+
+  // ── Render SQL output ─────────────────────────────────────────────────────
 
   function renderSQLOutput() {
     const div = document.getElementById('sql-output');
     if (!div) return;
+    const boxName = document.getElementById('boxName').value.trim() || 'flow';
     let html = '';
-    if (lastSQL) html += `
-      <div style="margin-top:20px">
-        <div class="output-header">
-          <div class="success-badge">🗄️ SQL — Gateway + Meters</div>
-          <button class="download-btn" id="copySqlBtn" onclick="copySql('sqlOutput','copySqlBtn')"
-            style="background:#1e3a5f;color:#60a5fa;border-color:#1e4a7a">📋 Copy SQL</button>
-        </div>
-        <pre id="sqlOutput">${lastSQL.replace(/</g,'&lt;')}</pre>
-      </div>`;
-    if (lastEnerseeSQL) html += `
-      <div style="margin-top:20px">
-        <div class="output-header">
-          <div class="success-badge">🔮 SQL — Enersee (na plaatsing uitvoeren)</div>
-          <button class="download-btn" id="copyErsBtn" onclick="copySql('enerseeSqlOutput','copyErsBtn')"
-            style="background:#2e1a47;color:#c084fc;border-color:#6b21a8">📋 Copy Enersee SQL</button>
-        </div>
-        <pre id="enerseeSqlOutput">${lastEnerseeSQL.replace(/</g,'&lt;')}</pre>
-      </div>`;
+
+    if (lastSQL) {
+      html += `
+        <div style="margin-top:20px">
+          <div class="output-header">
+            <div class="success-badge" style="color:#60a5fa">SQL - Gateway + Meters</div>
+            <div class="btn-group">
+              <button class="download-btn" id="copySqlBtn" onclick="copySql('sqlOutput','copySqlBtn')"
+                style="background:#1e3a5f;color:#60a5fa;border-color:#1e4a7a">Copy SQL</button>
+              <button class="download-btn" onclick="downloadSQL(lastSQL,'${boxName}_gateway.sql')"
+                style="background:#1e3a5f;color:#60a5fa;border-color:#1e4a7a">Download SQL</button>
+            </div>
+          </div>
+          <pre id="sqlOutput">${lastSQL.replace(/</g,'&lt;')}</pre>
+        </div>`;
+    }
+
+    if (lastEnerseeSQL) {
+      html += `
+        <div style="margin-top:20px">
+          <div class="output-header">
+            <div class="success-badge" style="color:#c084fc">SQL - Enersee (na plaatsing uitvoeren)</div>
+            <div class="btn-group">
+              <button class="download-btn" id="copyErsBtn" onclick="copySql('enerseeSqlOutput','copyErsBtn')"
+                style="background:#2e1a47;color:#c084fc;border-color:#6b21a8">Copy Enersee SQL</button>
+              <button class="download-btn" onclick="downloadSQL(lastEnerseeSQL,'${boxName}_enersee.sql')"
+                style="background:#2e1a47;color:#c084fc;border-color:#6b21a8">Download Enersee SQL</button>
+            </div>
+          </div>
+          <pre id="enerseeSqlOutput">${lastEnerseeSQL.replace(/</g,'&lt;')}</pre>
+        </div>`;
+    }
+
     div.innerHTML = html;
   }
+
+  // ── Download / Copy helpers ───────────────────────────────────────────────
+
+  function downloadSQL(content, filename) {
+    if (!content) return;
+    const blob = new Blob([content], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+  }
+
+  function downloadFlow() {
+    if (!lastFlow) return;
+    const boxName = document.getElementById('boxName').value.trim() || 'flow';
+    downloadSQL(JSON.stringify(lastFlow, null, 2), `${boxName}.json`);
+  }
+
+  function copySql(elId, btnId) {
+    const content = document.getElementById(elId)?.textContent;
+    if (!content) return;
+    navigator.clipboard.writeText(content).then(() => {
+      const btn = document.getElementById(btnId);
+      if (!btn) return;
+      const orig = btn.textContent;
+      btn.textContent = 'Gekopieerd!';
+      setTimeout(() => btn.textContent = orig, 2000);
+    });
+  }
+
+  function copyClipboard() {
+    if (!lastFlow) return;
+    navigator.clipboard.writeText(JSON.stringify(lastFlow, null, 2)).then(() => {
+      const btn = document.getElementById('copyBtn');
+      if (!btn) return;
+      btn.textContent = 'Gekopieerd!';
+      setTimeout(() => btn.textContent = 'Copy JSON', 2000);
+    });
+  }
+
+  // ── Compat stubs ──────────────────────────────────────────────────────────
+  function updateAllMeterTypeDropdowns() { updateAllMeterTypeCombos(); }
 
   // Start
   init();

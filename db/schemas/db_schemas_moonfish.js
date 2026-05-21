@@ -1,12 +1,5 @@
 'use strict';
 
-/**
- * Moonfish SQL schema adapter (standaard structuur)
- * - Gateways: (Name, TenantId)
- * - Meters: (Name, ReadableName, GatewayId, MeterTypeId, ParentMeterId, RetentionDays, MeterCategory)
- * - Geen OldMeterId fix
- */
-
 function esc(v) {
   return String(v ?? '').replace(/'/g, "''").trim();
 }
@@ -16,17 +9,16 @@ function sqlVal(v) {
   return `'${esc(v)}'`;
 }
 
-function buildSQL({ gatewayAssetId, buildingId, devices }) {
-  const gwName  = esc(gatewayAssetId);
+function buildSQL({ gatewayAssetId, gatewayMeterAssetId, gatewayMeterNaam, buildingId, devices }) {
+  const gwName   = esc(gatewayAssetId);
   const tenantId = esc(buildingId);
 
-  // ── Rows per meter ──────────────────────────────────────────────────────────
   const rows = [];
   devices.forEach(device => {
     const ids = device.assetIds?.length ? device.assetIds : [device.assetId];
     ids.forEach((assetId, i) => {
-      const naam  = ids.length > 1 ? `${device.naam || ''} ${i + 1}`.trim() : (device.naam || '');
-      const catSql = device.meterCategory ? `'${esc(device.meterCategory)}'` : 'NULL';
+      const naam   = ids.length > 1 ? `${device.naam || ''} ${i + 1}`.trim() : (device.naam || '');
+      const catSql = device.meterCategory ? `'${esc(device.meterCategory)}'` : "''";
       rows.push({
         name:         esc(assetId),
         readableName: sqlVal(naam),
@@ -40,8 +32,11 @@ function buildSQL({ gatewayAssetId, buildingId, devices }) {
     `  ('${r.name}', ${r.readableName}, @GatewayDbId, ${r.meterTypeId}, NULL, 0, ${r.category})`
   ).join(',\n');
 
+  const gwMeterName = esc(gatewayMeterAssetId || '');
+  const gwMeterReadableName = sqlVal(gatewayMeterNaam || '');
+
   return `
--- ══ MOONFISH INSERT ══════════════════════════════════════════════════════════
+-- ===== MOONFISH INSERT =======================================================
 
 -- 1) Gateway aanmaken
 INSERT INTO dbo.Gateways (Name, TenantId)
@@ -51,13 +46,22 @@ VALUES ('${gwName}', '${tenantId}');
 DECLARE @GatewayDbId INT;
 SELECT @GatewayDbId = Id FROM dbo.Gateways WHERE Name = '${gwName}';
 
--- 3) Meters aanmaken
+-- 3) Gateway meter aanmaken (UG56 events: heartbeat, buffering, enz.)
+DECLARE @GwMeterTypeId INT;
+SELECT @GwMeterTypeId = Id FROM dbo.MeterTypes WHERE Tag = 'GW_DRY_UG56_MLSGHT_V1';
+
+INSERT INTO dbo.Meters
+  (Name, ReadableName, GatewayId, MeterTypeId, ParentMeterId, RetentionDays, MeterCategory)
+VALUES
+  ('${gwMeterName}', ${gwMeterReadableName}, @GatewayDbId, @GwMeterTypeId, NULL, 0, NULL);
+
+-- 4) Meters aanmaken
 INSERT INTO dbo.Meters
   (Name, ReadableName, GatewayId, MeterTypeId, ParentMeterId, RetentionDays, MeterCategory)
 VALUES
 ${valuesSql};
 
--- 4) Verificatie
+-- 5) Verificatie
 SELECT Id, Name, ReadableName, MeterTypeId, MeterCategory
 FROM dbo.Meters
 WHERE GatewayId = @GatewayDbId;

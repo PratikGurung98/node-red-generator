@@ -451,7 +451,7 @@ function buildModbus(devices, tabId, linkInId) {
 
 // ── Main entry point ──────────────────────────────────────────────────────────
 
-function generateFlow({ boxName, gatewayAssetId, devices }) {
+function generateFlow({ boxName, gatewayAssetId, gatewayMeterAssetId, devices }) {
   if (!boxName?.trim()) throw new Error('boxName is verplicht');
   if (!Array.isArray(devices) || devices.length === 0) throw new Error('Minimaal 1 device vereist');
 
@@ -470,7 +470,7 @@ function generateFlow({ boxName, gatewayAssetId, devices }) {
   flow.push({ id: tabIoTHub, type: 'tab', label: `${boxName} - IoTHub`, disabled: false, info: '' });
 
   // IoT Hub — nodes op IoTHub tab
-  const { nodes: iothubNodes, linkInId } = buildIoTHub(boxName, tabIoTHub, gatewayAssetId);
+  const { nodes: iothubNodes, linkInId } = buildIoTHub(boxName, tabIoTHub, gatewayMeterAssetId || gatewayAssetId);
   flow.push(...iothubNodes);
 
   const allLinkOutIds = [];
