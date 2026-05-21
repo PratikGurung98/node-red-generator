@@ -2,9 +2,10 @@
 const express = require('express');
 const fs      = require('fs');
 const path    = require('path');
-const { generateFlow } = require('./generator');
-const dbRoutes         = require('./db/routes');
+const { generateFlow }           = require('./generator');
+const dbRoutes                   = require('./db/routes');
 const { buildSQL, buildEnerseeSQL } = require('./db/schemas');
+const { getIotHubs, provisionDevice } = require('./iothub');
 
 const app = express();
 app.use(express.json());
@@ -32,16 +33,62 @@ app.get('/api/templates', (_req, res) => {
         return { name, outputs };
       });
 
-  res.json({
-    lorawan: read('lorawan'),
-    modbus:  read('modbus'),
+  res.json({ lorawan: read('lorawan'), modbus: read('modbus') });
+});
+
+// IoT Hub routes
+app.get('/api/iothub/list', (_req, res) => {
+  try {
+    res.json({ ok: true, iothubs: getIotHubs().map(h => ({ label: h.label, hubName: h.hubName })) });
+  } catch (err) {
+    res.json({ ok: false, error: err.message });
+  }
+});
+
+app.post('/api/iothub/provision', async (req, res) => {
+  const { hubLabel, deviceId } = req.body;
+  if (!hubLabel || !deviceId) {
+    return res.json({ ok: false, error: 'hubLabel en deviceId zijn verplicht' });
+  }
+  try {
+    const result = await provisionDevice(hubLabel, deviceId);
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    if (err.message === 'AZ_LOGIN_REQUIRED') {
+      return res.json({ ok: false, error: 'AZ_LOGIN_REQUIRED' });
+    }
+    console.error(err);
+    res.json({ ok: false, error: err.message });
+  }
+});
+
+// Az login starten (opent browser)
+app.post('/api/iothub/login', async (req, res) => {
+  const { execFile } = require('child_process');
+  execFile('az', ['login', '--output', 'json'], { shell: true }, (err, stdout, stderr) => {
+    if (err) return res.json({ ok: false, error: stderr || err.message });
+    try {
+      const accounts = JSON.parse(stdout);
+      res.json({ ok: true, accounts });
+    } catch {
+      res.json({ ok: true });
+    }
   });
 });
 
 // Generate flow + SQL
 app.post('/api/generate', (req, res) => {
   try {
-    const flow = generateFlow(req.body);
+    // Hostname ophalen uit config op basis van geselecteerde IoT Hub
+    let iotHubHostname = null;
+    if (req.body.iotHubLabel) {
+      try {
+        const { getIotHubs } = require('./iothub');
+        const hub = getIotHubs().find(h => h.label === req.body.iotHubLabel);
+        if (hub) iotHubHostname = hub.hubName + '.azure-devices.net';
+      } catch (_) {}
+    }
+    const flow = generateFlow({ ...req.body, iotCredentials: req.body.iotCredentials || null, iotHubHostname });
 
     let sql = null;
     let enerseeSQL = null;

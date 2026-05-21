@@ -40,6 +40,8 @@ function remapIds(nodes) {
     if (n.id)     n.id     = idMap[n.id]     ?? n.id;
     if (n.g)      n.g      = idMap[n.g]      ?? n.g;
     if (n.server) n.server = idMap[n.server] ?? n.server;
+    if (n.tls)    n.tls    = idMap[n.tls]    ?? n.tls;
+    if (n.broker) n.broker = idMap[n.broker] ?? n.broker;
 
     if (Array.isArray(n.wires)) {
       n.wires = n.wires.map(outputs =>
@@ -91,7 +93,7 @@ function replaceMultiDev(funcStr, assetIds) {
 
 // ── IoT Hub section ───────────────────────────────────────────────────────────
 
-function buildIoTHub(boxName, tabId, gatewayAssetId) {
+function buildIoTHub(boxName, tabId, gatewayAssetId, credentials) {
   const template = loadJSON(path.join(TEMPLATES, 'iothub.json'));
   const { nodes, idMap } = remapIds(template);
 
@@ -101,10 +103,19 @@ function buildIoTHub(boxName, tabId, gatewayAssetId) {
       n.z = tabId;
     }
 
-    // Patch MQTT broker: device clientid + topic
+    // Patch MQTT broker: alle velden correct zetten
     if (n.type === 'mqtt-broker') {
       n.clientid = boxName;
       n.name     = boxName + ' Azure IoTHub';
+      // Broker URL altijd overschrijven op basis van credentials hostname
+      // (template heeft hardcoded Delhaize URL)
+      if (credentials?.hostname) {
+        n.broker = `ssl://${credentials.hostname}`;
+      }
+      // Credentials alleen zetten als beschikbaar
+      // (Node-RED slaat deze op in credentials store, niet in flow JSON)
+      if (credentials?.username) n.user     = credentials.username;
+      if (credentials?.sas)      n.password = credentials.sas;
     }
 
     // Patch MQTT out: topic
@@ -451,7 +462,7 @@ function buildModbus(devices, tabId, linkInId) {
 
 // ── Main entry point ──────────────────────────────────────────────────────────
 
-function generateFlow({ boxName, gatewayAssetId, gatewayMeterAssetId, devices }) {
+function generateFlow({ boxName, gatewayAssetId, gatewayMeterAssetId, devices, iotCredentials, iotHubHostname }) {
   if (!boxName?.trim()) throw new Error('boxName is verplicht');
   if (!Array.isArray(devices) || devices.length === 0) throw new Error('Minimaal 1 device vereist');
 
@@ -470,7 +481,11 @@ function generateFlow({ boxName, gatewayAssetId, gatewayMeterAssetId, devices })
   flow.push({ id: tabIoTHub, type: 'tab', label: `${boxName} - IoTHub`, disabled: false, info: '' });
 
   // IoT Hub — nodes op IoTHub tab
-  const { nodes: iothubNodes, linkInId } = buildIoTHub(boxName, tabIoTHub, gatewayMeterAssetId || gatewayAssetId);
+  // Merge hostname into credentials if provided separately
+  const credentials = iotCredentials
+    ? { ...iotCredentials, hostname: iotCredentials.hostname || iotHubHostname }
+    : (iotHubHostname ? { hostname: iotHubHostname } : null);
+  const { nodes: iothubNodes, linkInId } = buildIoTHub(boxName, tabIoTHub, gatewayMeterAssetId || gatewayAssetId, credentials);
   flow.push(...iothubNodes);
 
   const allLinkOutIds = [];

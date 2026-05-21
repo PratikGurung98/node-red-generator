@@ -83,6 +83,42 @@
     .combo-opt { padding: 8px 12px; font-size: 13px; cursor: pointer; color: #e2e8f0; }
     .combo-opt:hover { background: #2d3148; }
     .combo-opt.selected { background: #1e2245; color: #a5b4fc; }
+
+    .cred-box {
+      background: #0a1a0a;
+      border: 1px solid #15803d;
+      border-radius: 8px;
+      padding: 14px 16px;
+      font-size: 12px;
+      font-family: monospace;
+      color: #4ade80;
+      word-break: break-all;
+      line-height: 1.8;
+      margin-top: 12px;
+    }
+    .cred-box .cred-label { color: #64748b; font-size: 11px; margin-bottom: 2px; }
+    .cred-box .cred-val   { color: #4ade80; margin-bottom: 10px; }
+    .step-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px; height: 20px;
+      background: #4f6ef7;
+      color: #fff;
+      border-radius: 50%;
+      font-size: 11px;
+      font-weight: 700;
+      margin-right: 8px;
+    }
+    .warn-box {
+      background: #3b2000;
+      border: 1px solid #92400e;
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 12px;
+      color: #fbbf24;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
@@ -94,7 +130,7 @@
 
 <div class="container">
 
-  <!-- DB selectie -->
+  <!-- DB + Locatie -->
   <div class="section-title">Database</div>
   <div class="card">
     <label>Klant / Database</label>
@@ -104,7 +140,6 @@
     <div id="dbStatus" style="margin-top:8px;min-height:20px"></div>
   </div>
 
-  <!-- Building selectie -->
   <div id="buildingSection" style="display:none">
     <div class="section-title">Locatie</div>
     <div class="card">
@@ -119,12 +154,58 @@
     </div>
   </div>
 
-  <!-- Box config -->
-  <div class="section-title">Box configuratie</div>
+  <!-- STAP 1: Box naam -->
+  <div class="section-title"><span class="step-badge">1</span>Box naam</div>
   <div class="card">
-    <label>Box naam / Device ID (Azure IoT Hub)</label>
-    <input type="text" id="boxName" placeholder="E05_04_2025_Bulk_bestelling_Vlegelbox_Batch_2_Merbraine_BOX1">
+    <label>Box naam / Device ID <span style="color:#374151;font-size:11px">(= device ID in Azure IoT Hub, geen spaties)</span></label>
+    <input type="text" id="boxName" placeholder="E05_04_2025_Bulk_bestelling_Vlegelbox_Batch_2_Merbraine_BOX1"
+      oninput="validateBoxName(this)">
+    <div id="boxNameError" style="display:none;color:#fca5a5;font-size:12px;margin-top:4px">
+      Spaties zijn niet toegestaan in de box naam. Gebruik underscores: TEST_BOX_BABU
+    </div>
+  </div>
 
+  <!-- STAP 2: IoT Hub credentials -->
+  <div class="section-title"><span class="step-badge">2</span>IoT Hub credentials</div>
+  <div class="card">
+    <label>IoT Hub</label>
+    <select id="iotHubSelect">
+      <option value="">— selecteer IoT Hub —</option>
+    </select>
+
+    <div id="iotCredStatus" style="margin-top:10px;min-height:20px"></div>
+
+    <button class="generate-btn" id="provisionBtn" onclick="provisionIotHub()"
+      style="margin-top:14px;background:#166534;color:#4ade80;border:1px solid #15803d">
+      Genereer Azure credentials
+    </button>
+
+    <div id="iotCredResult" style="display:none;margin-top:14px">
+      <div style="display:grid;gap:10px">
+        <div>
+          <div style="font-size:11px;color:#64748b;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">Username</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <code style="flex:1;background:#0a0d14;border:1px solid #1e2235;border-radius:6px;padding:8px 10px;font-size:12px;color:#60a5fa;word-break:break-all" id="credUsername"></code>
+            <button class="download-btn" onclick="copyField('credUsername', this)" style="background:#1e3a5f;color:#60a5fa;border-color:#1e4a7a;flex-shrink:0">Copy</button>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:#64748b;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">SAS Token (password)</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <code style="flex:1;background:#0a0d14;border:1px solid #1e2235;border-radius:6px;padding:8px 10px;font-size:12px;color:#4ade80;word-break:break-all" id="credSas"></code>
+            <button class="download-btn" onclick="copyField('credSas', this)" style="flex-shrink:0">Copy</button>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:10px;font-size:12px;color:#64748b;line-height:1.6">
+        Node-RED: MQTT broker node openen &rarr; Security tab &rarr; username + password plakken.
+      </div>
+    </div>
+  </div>
+
+  <!-- STAP 3: Box configuratie -->
+  <div class="section-title"><span class="step-badge">3</span>Box configuratie</div>
+  <div class="card">
     <div class="grid-2" style="margin-top:0">
       <div>
         <label>Vlegelbox Asset ID <span style="color:#374151;font-size:11px">(voor de gateway table)</span></label>
@@ -135,13 +216,12 @@
         <input type="text" id="gatewayMeterAssetId" placeholder="360029042026125000">
       </div>
     </div>
-
     <label>Gateway Meter naam <span style="color:#374151;font-size:11px">(ReadableName in dbo.Meters)</span></label>
     <input type="text" id="gatewayMeterNaam" placeholder="bv. Gateway UG56 BOX1">
   </div>
 
-  <!-- Devices -->
-  <div class="section-title">Devices</div>
+  <!-- STAP 4: Devices -->
+  <div class="section-title"><span class="step-badge">4</span>Devices</div>
   <div id="devices"></div>
 
   <div class="add-btns">
@@ -193,6 +273,9 @@
     });
 
     if (sel.value) await onDbChange();
+
+    // IoT Hubs laden
+    await loadIotHubs();
   }
 
   // ── DB ────────────────────────────────────────────────────────────────────
@@ -231,6 +314,13 @@
 
       updateAllDecoderCombos();
       updateAllMeterTypeCombos();
+
+      // Auto-select matching IoT Hub op basis van DB label
+      const iotSel = document.getElementById('iotHubSelect');
+      if (iotSel) {
+        const match = Array.from(iotSel.options).find(o => o.value === label);
+        if (match) iotSel.value = label;
+      }
 
     } catch (err) {
       status.innerHTML = `<span class="db-status err">Fout: ${err.message}</span>`;
@@ -645,8 +735,10 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           boxName, gatewayAssetId, gatewayMeterAssetId, gatewayMeterNaam,
-          selectedDb:  document.getElementById('dbSelect').value,
-          buildingId:  document.getElementById('buildingSelect').value,
+          selectedDb:     document.getElementById('dbSelect').value,
+          buildingId:     document.getElementById('buildingSelect').value,
+          iotHubLabel:    document.getElementById('iotHubSelect').value,
+          iotCredentials: lastIotCredentials,
           devices,
         }),
       });
@@ -813,6 +905,109 @@
 
   // ── Compat stubs ──────────────────────────────────────────────────────────
   function updateAllMeterTypeDropdowns() { updateAllMeterTypeCombos(); }
+
+  function validateBoxName(input) {
+    const err = document.getElementById('boxNameError');
+    if (/\s/.test(input.value)) {
+      input.style.borderColor = '#ef4444';
+      if (err) err.style.display = 'block';
+    } else {
+      input.style.borderColor = '';
+      if (err) err.style.display = 'none';
+    }
+  }
+
+  function copyField(elId, btn) {
+    const text = document.getElementById(elId)?.textContent;
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+      const orig = btn.textContent;
+      btn.textContent = 'Gekopieerd!';
+      setTimeout(() => btn.textContent = orig, 2000);
+    });
+  }
+
+  // ── IoT Hub ───────────────────────────────────────────────────────────────
+
+  let lastIotCredentials = null;
+
+  async function loadIotHubs() {
+    try {
+      const data = await fetch('/api/iothub/list').then(r => r.json());
+      const sel = document.getElementById('iotHubSelect');
+      (data.iothubs || []).forEach(h => {
+        const opt = document.createElement('option');
+        opt.value = h.label;
+        opt.textContent = `${h.label} (${h.hubName})`;
+        sel.appendChild(opt);
+      });
+    } catch (e) {
+      console.error('IoT Hubs laden mislukt:', e.message);
+    }
+  }
+
+  async function provisionIotHub() {
+    const hubLabel = document.getElementById('iotHubSelect').value;
+    const deviceId = document.getElementById('boxName').value.trim();
+    const btn      = document.getElementById('provisionBtn');
+    const status   = document.getElementById('iotCredStatus');
+    const result   = document.getElementById('iotCredResult');
+
+    if (!hubLabel) { alert('Selecteer eerst een IoT Hub.'); return; }
+    if (!deviceId) { alert('Vul eerst de box naam in (wordt gebruikt als device ID).'); return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Bezig...';
+    status.innerHTML = '<span style="color:#64748b;font-size:12px">Device aanmaken en token genereren...</span>';
+    result.style.display = 'none';
+
+    try {
+      const resp = await fetch('/api/iothub/provision', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hubLabel, deviceId }),
+      });
+      const data = await resp.json();
+
+      if (!data.ok) {
+        if (data.error === 'AZ_LOGIN_REQUIRED') {
+          status.innerHTML = '<div class="warn-box">Niet ingelogd in Azure CLI. Klik hieronder om in te loggen (opent browser).</div>' +
+            '<button class="generate-btn" onclick="azLogin()" style="margin-top:10px;background:#92400e;color:#fbbf24;border:1px solid #b45309">Az Login</button>';
+          return;
+        }
+        throw new Error(data.error);
+      }
+
+      lastIotCredentials = { sas: data.sas, username: data.username };
+
+      document.getElementById('credUsername').textContent = data.username;
+      document.getElementById('credSas').textContent      = data.sas;
+      result.style.display = 'block';
+      status.innerHTML = '<span class="db-status ok">Device aangemaakt op ' + data.hubName + '</span>';
+
+    } catch (e) {
+      status.innerHTML = `<span class="db-status err">Fout: ${e.message}</span>`;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Genereer Azure credentials';
+    }
+  }
+
+  async function azLogin() {
+    const status = document.getElementById('iotCredStatus');
+    status.innerHTML = '<span style="color:#64748b;font-size:12px">Browser geopend voor Azure login... even wachten.</span>';
+    try {
+      const resp = await fetch('/api/iothub/login', { method: 'POST' });
+      const data = await resp.json();
+      if (data.ok) {
+        status.innerHTML = '<span class="db-status ok">Ingelogd! Probeer opnieuw.</span>';
+      } else {
+        status.innerHTML = `<span class="db-status err">Login fout: ${data.error}</span>`;
+      }
+    } catch (e) {
+      status.innerHTML = `<span class="db-status err">Login fout: ${e.message}</span>`;
+    }
+  }
 
   // Start
   init();

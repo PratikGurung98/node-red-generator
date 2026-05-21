@@ -1,5 +1,5 @@
 # AI Acceleration Labs — Node-RED Generator
-
+## Workfile voor Claude
 
 ---
 
@@ -87,12 +87,14 @@ inject 60s → node-redSTART (heartbeat event bij deploy)
 node-red-generator/
 ├── app.js                      ← Express server + alle routes
 ├── package.json
-├── config.json                 ← !! NOOIT VERVANGEN !! DB credentials
+├── config.json                 ← !! NOOIT VERVANGEN !! DB credentials + IoT Hub config
 ├── categories.json             ← !! NOOIT VERVANGEN !! Configureerbare lijsten
 ├── generator/
 │   └── index.js                ← Node-RED flow generator (kern logica)
 ├── templates/
 │   └── iothub.json             ← IoTHub flow template (DATABACKUP, MQTT, etc.)
+├── iothub/
+│   └── index.js                ← Azure IoT Hub automatisering (az CLI wrapper)
 ├── db/
 │   ├── connection.js           ← MSSQL connection pool manager
 │   ├── routes.js               ← DB API endpoints
@@ -116,16 +118,18 @@ node-red-generator/
 ```
 app.js
 generator/index.js
+iothub/index.js
 templates/iothub.json
 public/index.html
-db/ (alle files)
+db/ (alle files behalve schemas/index.js)
 ```
 
 ### NOOIT vervangen
 ```
-config.json          ← DB credentials
+config.json          ← DB credentials + IoT Hub config
 categories.json      ← eigen lijsten
 lib/                 ← eigen decoders
+db/schemas/index.js  ← schema router
 ```
 
 ---
@@ -154,11 +158,29 @@ lib/                 ← eigen decoders
       "password": "...",
       "schema": "delhaize"
     }
+  ],
+  "iothubs": [
+    {
+      "label": "Delhaize",
+      "hubName": "DelhaizeIotHub",
+      "subscriptionId": "be45c496-f9a2-400b-9fe0-8741406b006a"
+    },
+    {
+      "label": "Moonfish",
+      "hubName": "uns-mf-iotHub",
+      "subscriptionId": "be45c496-f9a2-400b-9fe0-8741406b006a"
+    },
+    {
+      "label": "Watergroep",
+      "hubName": "WatergroepIotHub",
+      "subscriptionId": "be45c496-f9a2-400b-9fe0-8741406b006a"
+    }
   ]
 }
 ```
 
 Nieuwe DB toevoegen = nieuwe entry met `"schema": "moonfish"` (of `"delhaize"` indien afwijkende structuur).
+Nieuwe IoT Hub toevoegen = nieuwe entry in `iothubs` array.
 
 ---
 
@@ -216,9 +238,18 @@ Complete Node-RED groep met:
 | Gebouwen tabel | `Tenants` | `Buildings` |
 | Gateway FK kolom | `TenantId` | `BuildingId` |
 | Meters extra | — | `IsVisible`, `OldMeterId` |
-| MeterCategory | nullable | NOT NULL (gebruik `''` als leeg) |
+| MeterCategory | `''` (nooit NULL) | `''` (nooit NULL) |
+| Gateway meter IsVisible | — | `0` |
 | Na insert | — | OldMeterId = Id fix |
 | Enersee | niet van toepassing | `EnerseeMetricNames` tabel |
+
+### Gateway meter
+Elke box krijgt een extra meter row voor de gateway zelf (heartbeat, buffering events, enz.):
+- `Name` = Gateway Meter Asset ID (apart veld in UI)
+- `MeterTypeId` = opgezocht via subquery op tag `GW_DRY_UG56_MLSGHT_V1` (werkt over alle DBs)
+- `ReadableName` = Gateway Meter naam (apart veld in UI)
+- Delhaize: `IsVisible = 0`, `MeterCategory = ''`
+- Moonfish: geen `IsVisible`
 
 ### Enersee tabel (Delhaize)
 ```sql
@@ -244,6 +275,9 @@ GET  /api/db/:label/metertypes          ← meter types (Id, Name, Tag)
 GET  /api/db/:label/datatypes           ← alle data types
 GET  /api/db/:label/metertypelinks      ← koppeling MeterType ↔ DataType
 GET  /api/db/categories                 ← categories.json serveren
+GET  /api/iothub/list                   ← IoT Hubs uit config.json
+POST /api/iothub/provision              ← device aanmaken + SAS token genereren
+POST /api/iothub/login                  ← az login starten (opent browser)
 POST /api/generate                      ← genereer flow + SQL
 ```
 
@@ -251,9 +285,17 @@ POST /api/generate                      ← genereer flow + SQL
 ```json
 {
   "boxName": "E05_04_2025_..._BOX1",
-  "gatewayAssetId": "360029042026125000",
+  "gatewayAssetId": "362025051912254662",
+  "gatewayMeterAssetId": "360029042026125000",
+  "gatewayMeterNaam": "Gateway UG56 BOX1",
   "selectedDb": "Delhaize",
   "buildingId": "ABC123-GUID",
+  "iotHubLabel": "Delhaize",
+  "iotCredentials": {
+    "sas": "SharedAccessSignature sr=...",
+    "username": "DelhaizeIotHub.azure-devices.net/BOXNAME/?api-version=2021-04-12",
+    "hostname": "DelhaizeIotHub.azure-devices.net"
+  },
   "devices": [{
     "commType": "lorawan",
     "template": "E_IEM3255_DRAG_LORA_V1",
@@ -279,19 +321,23 @@ POST /api/generate                      ← genereer flow + SQL
 
 ### ID generatie
 - Alle Node-RED node IDs zijn random (`crypto.randomBytes(8).toString('hex')`)
-- `remapIds(nodes)` → deep clone + remap van alle interne referenties (wires, links, nodes, scope, server, g)
+- `remapIds(nodes)` → deep clone + remap van alle interne referenties: `wires`, `links`, `nodes`, `scope`, `server`, `tls`, `broker`, `g`
 
 ### Placeholders
 - `const Dev = "PLACEHOLDER"` → vervangen door `assetId`
-- `GATEWAY_ASSET_ID` → vervangen door `gatewayAssetId` (in node-redSTART én DATABACKUP)
+- `GATEWAY_ASSET_ID` → vervangen door `gatewayMeterAssetId` (in node-redSTART én DATABACKUP)
 - `{meetpunt naam}` of `METERNAAM` → vervangen door `naam`
 - `"36[0-9x]{14,18}"` regex → multi-output decoder Dev IDs in volgorde
 
+### IoT Hub credentials in flow
+- `mqtt-broker` node krijgt `user` + `password` + `broker` URL automatisch ingevuld
+- `broker` URL = `ssl://{hubName}.azure-devices.net` op basis van geselecteerde IoT Hub
+- **Let op:** Node-RED slaat credentials op in een aparte beveiligde store, niet in de flow JSON zelf → na import moet je in de MQTT broker node de Security tab openen en username + SAS token plakken (copy knoppen in de UI)
+
 ### Link in/out koppeling
-Na opbouwen van alle nodes:
 ```javascript
-linkInNode.links = allLinkOutIds;          // link in kent alle link outs
-linkOutNodes.forEach(n => n.links = [linkInId]);  // elke link out kent de link in
+linkInNode.links = allLinkOutIds;
+linkOutNodes.forEach(n => n.links = [linkInId]);
 ```
 
 ### Modbus chaining
@@ -303,64 +349,87 @@ groups[idx-1].go2NextNode.wires[1] = [getterNode.id];
 
 ---
 
+## IoT Hub automatisering (iothub/index.js)
+
+Gebruikt Azure CLI (`az`) via `child_process.exec`. Vereist dat `az` geïnstalleerd en ingelogd is.
+
+### Workflow
+1. `ensureLogin(subscriptionId)` → checkt `az account show`, wisselt subscription indien nodig
+2. `createDevice(hubName, deviceId)` → `az iot hub device-identity create` (negeert "already exists")
+3. `generateSasToken(hubName, deviceId)` → `az iot hub generate-sas-token --duration 31536000`
+4. Returns `{ sas, username, hostname, deviceId, hubName }`
+
+### Username formaat
+```
+{hubName}.azure-devices.net/{deviceId}/?api-version=2021-04-12
+```
+
+### Az CLI quoting
+Argumenten worden gequote via `exec` zodat spaties in device IDs (boxnamen) correct werken.
+
+### Login flow
+Als niet ingelogd → UI toont "Az Login" knop → `POST /api/iothub/login` → `az login` opent browser.
+
+---
+
 ## Bekende quirks & oplossingen
 
 | Probleem | Oplossing |
 |---|---|
 | IoTHub tab moet LAATSTE zijn | Tab volgorde: Lora → Modbus → IoTHub |
 | `status` node volgt MQTT node niet | `remapIds` remapt ook `scope` arrays |
+| `mqtt out` server leeg na import | `remapIds` remapt nu ook `n.broker` (was missing) |
+| TLS config node gebroken na import | `remapIds` remapt nu ook `n.tls` (was missing) |
 | Inline `onchange` op radio buttons werkt niet betrouwbaar | `addEventListener` na `div.innerHTML` |
 | `dispatchEvent` op hidden input triggert onchange niet | Direct functie aanroepen na `hidden.value = ...` |
-| MeterCategory NOT NULL in Delhaize | Gebruik `''` (lege string) in plaats van `NULL` |
+| MeterCategory nooit NULL (beide schemas) | Gebruik `''` (lege string) |
 | SQL verdwijnt bij hergenereren | SQL staat in aparte `sql-output` div, state in `lastSQL` variabele |
+| Spaties in boxnaam breken az CLI | `exec` met gequote args i.p.v. `execFile` |
+
+---
+
+## UI workflow (stap voor stap)
+
+1. **Database** selecteren → bouwt verbinding, laadt buildings/metertypes/datatypes
+2. **Locatie** selecteren (gebouw of tenant)
+3. **Box naam** invullen (= Azure IoT Hub device ID)
+4. **IoT Hub credentials** genereren:
+   - IoT Hub wordt auto-geselecteerd op basis van DB keuze
+   - Klik "Genereer Azure credentials" → device aangemaakt, SAS token gegenereerd
+   - Username + token tonen met aparte Copy knoppen
+   - Na import in Node-RED: MQTT broker → Security tab → username + password plakken
+5. **Box configuratie**: Vlegelbox Asset ID + Gateway Meter Asset ID + Gateway Meter naam
+6. **Devices** toevoegen (LoRaWAN of Modbus)
+7. **Generate Node-RED Flow** → download JSON, importeer in Node-RED
+8. **Generate SQL** → download `{boxnaam}_gateway.sql` en `{boxnaam}_enersee.sql`
 
 ---
 
 ## TODO / Volgende stappen
 
-### V1 — Huidige tool (in productie)
-- [x] Node-RED flow genereren (LoRaWAN + Modbus)
-- [x] SQL genereren (Gateway + Meters + Enersee)
-- [x] DB connectie (Moonfish + Delhaize)
-- [x] Buildings/MeterTypes/DataTypes/MeterTypeLinks ophalen
-- [x] Enersee configuratie per device
-- [x] MeterCategory (API/Delhaize/Custom)
-- [x] Sticker sheet — nog te bouwen maar besloten
+### Afgerond deze sessie
+- [x] Gateway Meter Asset ID als apart veld (voor Node-RED flow + meter in DB)
+- [x] Vlegelbox Asset ID label verduidelijkt (voor gateway table)
+- [x] SQL: gateway meter row met MeterTypeId via tag `GW_DRY_UG56_MLSGHT_V1`
+- [x] SQL: download knoppen voor gateway SQL en Enersee SQL
+- [x] SQL: geen emojis in comments (MSSQL compatibel)
+- [x] MeterCategory nooit NULL in beide schemas (altijd `''`)
+- [x] Azure IoT Hub automatisering via az CLI (iothub/index.js)
+- [x] UI volgorde logisch: boxnaam → credentials → config → devices
+- [x] IoT Hub auto-selectie op basis van DB keuze
+- [x] Copy knoppen per credential veld
+- [x] remapIds fix: `n.tls` en `n.broker` worden nu correct geremapped
+- [x] MQTT broker URL dynamisch op basis van geselecteerde IoT Hub
 
 ### V2 Roadmap — prioriteit volgorde
 
 **1. SQL execute met preview (hoog prio)**
 - BEGIN TRAN → inserts uitvoeren → SELECT resultaat tonen in UI
-- Gebruiker ziet preview → "✅ Commit" of "❌ Rollback"
-- Enersee SQL: aparte download knop `{boxnaam}_enersee.sql`
-  - Reden: Enersee mag pas worden uitgevoerd NADAT de box geplaatst is
-  - Moonfish heeft geen Enersee
+- Gebruiker ziet preview → "Commit" of "Rollback"
+- Enersee SQL apart uitvoeren (na plaatsing box)
 
-**2. Azure IoT Hub automatisering (hoog prio — spaart ~10 min/box)**
-- Huidige manuele stappen die wegvallen:
-  - Azure portal openen → juiste IoT Hub zoeken
-  - Device aanmaken
-  - CLI openen → juiste subscription instellen
-  - `az iot hub generate-sas-token` commando invullen
-  - Token kopiëren → in Node-RED plakken + username invullen
-- Implementatie:
-  - `config.json` uitbreiden met IoT Hub connection strings
-  - Device aanmaken via Azure REST API (geen SDK nodig)
-  - SAS token genereren via HMAC-SHA256 (pure Node.js crypto, geen CLI)
-  - Token + username automatisch injecteren in gegenereerde flow
-- Config toevoeging:
-```json
-"iothubs": [
-  {
-    "label": "Delhaize",
-    "hostname": "DelhaizeIotHub.azure-devices.net",
-    "connectionString": "HostName=...;SharedAccessKeyName=iothubowner;SharedAccessKey=..."
-  }
-]
-```
-
-**3. Standaard presets (medium prio)**
-- `presets.json` config (NOOIT in zip, zelf beheren):
+**2. Standaard presets (medium prio)**
+- `presets.json` config (NOOIT in git, zelf beheren):
 ```json
 {
   "presets": [
@@ -376,44 +445,25 @@ groups[idx-1].go2NextNode.wires[1] = [getterNode.id];
   ]
 }
 ```
-- Verschillende presets per DB/klant mogelijk
-- Preset laden vult alle devices voor, gebruiker vult enkel nog asset IDs en DevEUIs in
 
-**4. Barcode scanner integratie (medium prio)**
-- Context: assemblage van bulk bestellingen
-- Huidige pijn: DevEUI, AppKey, serienummer manueel overtypen
-- Hardware advies: **Tera 2D USB** of **NETUM 2D USB** (€25-35)
-  - Leest QR codes (Dragino: DevEUI + AppKey + SN in QR)
-  - Leest 1D barcodes (Milesight SN onderaan)
-  - Plug & play USB HID — werkt als keyboard, geen drivers
-- Dragino labels: QR → DevEUI + AppKey + SN (nog 6-char AT wachtwoord manueel)
-- Milesight labels: QR rechtsboven → EUI, 1D barcode → SN
-- Implementatie: scan-knop naast DevEUI veld, auto-focus, scanner vuurt enter
-- Workflow na implementatie:
-```
-Per device (~10 seconden):
-1. Scan QR/barcode → DevEUI + SN automatisch ingevuld
-2. Typ 6 chars AT wachtwoord (Dragino only)
-3. Volgende device
-```
+**3. Barcode scanner integratie (medium prio)**
+- Hardware: **Tera 2D USB** of **NETUM 2D USB** (€25-35), plug & play
+- Dragino QR → DevEUI + AppKey + SN
+- Milesight QR → EUI, barcode → SN
+- Scan-knop naast DevEUI veld, auto-focus, scanner vuurt enter
 
-**5. Sticker sheet generator (medium prio)**
-- Na configureren: één klik → PDF met alle stickers voor die box
-- Eén A4 in plaats van N individuele prints
-- Inhoud per sticker: asset ID, device naam, type, QR code
-- Voordeel: altijd correct want gegenereerd op moment van scannen
+**4. Sticker sheet generator (medium prio)**
+- Na configureren: één klik → PDF met alle stickers
+- Per sticker: asset ID, device naam, type, QR code
 
-**6. QA validatie voor deploy (medium prio)**
-- Checkt voor genereren:
-  - Asset IDs uniek in DB?
-  - DevEUI bestaat al in DB?
-  - Slave adres al in gebruik op deze gateway?
-  - Alle verplichte velden ingevuld?
+**5. QA validatie voor deploy (medium prio)**
+- Asset IDs uniek in DB?
+- DevEUI bestaat al?
+- Slave adres al in gebruik op deze gateway?
 
-**7. Node-RED remote deploy (low prio — eerder remote config dan tijdwinst)**
+**6. Node-RED remote deploy (low prio)**
 - Node-RED REST API: `POST http://{gateway-ip}:1880/flows`
-- Probleem: gateways draaien op SIM + OpenVPN → connectie soms instabiel
-- Nuttig voor remote config changes, niet zozeer voor eerste deploy
+- Probleem: SIM + OpenVPN soms instabiel
 
 ---
 
@@ -422,16 +472,23 @@ Per device (~10 seconden):
 ### Device labels
 | Device | QR code | 1D barcode | Bevat |
 |---|---|---|---|
-| Dragino RS485-LB | ✅ | — | DevEUI, AppKey, SN |
-| Milesight AM3xx | ✅ klein | ✅ onderaan | QR: EUI, barcode: SN |
+| Dragino RS485-LB | ja | — | DevEUI, AppKey, SN |
+| Milesight AM3xx | ja (klein) | ja (onderaan) | QR: EUI, barcode: SN |
 
 ### Aanbevolen scanner
 **Tera 2D USB** of **NETUM 2D USB** — €25-35, leest QR + 1D, plug & play
 
 ### Gateway connectiviteit
 - Milesight UG56 draait op SIM kaart + OpenVPN
-- Remote management (Node-RED API, Milesight platform) soms instabiel door slechte 4G verbinding
+- Remote management soms instabiel door slechte 4G verbinding
 - Filosofie: **pre-configureer alles voor deployment** → op locatie enkel aanzetten
+
+### Azure IoT Hubs (subscription: Vlegel_PartnerCenter_Sponsership)
+| Label | Hub naam | Hostname |
+|---|---|---|
+| Delhaize | DelhaizeIotHub | DelhaizeIotHub.azure-devices.net |
+| Moonfish | uns-mf-iotHub | uns-mf-iotHub.azure-devices.net |
+| Watergroep | WatergroepIotHub | WatergroepIotHub.azure-devices.net |
 
 ---
 
@@ -445,4 +502,3 @@ Per device (~10 seconden):
 | Azure IoT Hub | ~10 min | ~30 sec (automatisch) |
 | Stickers | ~15 min | ~2 min (batch print) |
 | **Totaal** | **~3 uur** | **~45 min** |
-
