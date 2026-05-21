@@ -93,3 +93,29 @@ router.get('/:label/metertypelinks', async (req, res) => {
 });
 
 module.exports = router;
+
+// ── POST /api/db/:label/sql/preview — uitvoeren met ROLLBACK, geeft preview ──
+router.post('/:label/sql/preview', async (req, res) => {
+  const label  = decodeURIComponent(req.params.label);
+  const { sql } = req.body;
+  if (!sql) return res.json({ ok: false, error: 'Geen SQL meegegeven' });
+  try {
+    const result = await db.previewSQL(label, sql);
+    res.json(result);
+  } catch (err) {
+    res.json({ ok: false, error: err.message });
+  }
+});
+
+// ── POST /api/db/:label/sql/execute — uitvoeren met COMMIT ────────────────────
+router.post('/:label/sql/execute', async (req, res) => {
+  const label  = decodeURIComponent(req.params.label);
+  const { sql } = req.body;
+  if (!sql) return res.json({ ok: false, error: 'Geen SQL meegegeven' });
+  try {
+    const result = await db.executeSQL(label, sql);
+    res.json(result);
+  } catch (err) {
+    res.json({ ok: false, error: err.message });
+  }
+});

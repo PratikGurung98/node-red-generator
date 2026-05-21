@@ -84,6 +84,94 @@
     .combo-opt:hover { background: #2d3148; }
     .combo-opt.selected { background: #1e2245; color: #a5b4fc; }
 
+    .preview-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      margin-top: 10px;
+    }
+    .preview-table th {
+      background: #1a1d2e;
+      color: #64748b;
+      padding: 6px 10px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      border-bottom: 1px solid #2d3148;
+    }
+    .preview-table td {
+      padding: 6px 10px;
+      border-bottom: 1px solid #1e2235;
+      color: #e2e8f0;
+      font-family: monospace;
+    }
+    .preview-table tr:last-child td { border-bottom: none; }
+    .preview-table tr:hover td { background: #1a1d2e; }
+    .preview-wrap {
+      background: #0a0d14;
+      border: 1px solid #1e2235;
+      border-radius: 8px;
+      overflow: auto;
+      max-height: 260px;
+      margin-top: 10px;
+    }
+    .confirm-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 14px;
+      padding: 12px 14px;
+      background: #1a1d2e;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      flex-wrap: wrap;
+    }
+    .confirm-bar .timeout-msg {
+      font-size: 12px;
+      color: #64748b;
+      flex: 1;
+    }
+    .confirm-bar .timeout-msg.urgent { color: #fbbf24; }
+    .btn-commit {
+      background: #166534; color: #4ade80;
+      border: 1px solid #15803d;
+      border-radius: 6px; padding: 8px 20px;
+      font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: background .15s;
+    }
+    .btn-commit:hover { background: #15803d; }
+    .btn-rollback {
+      background: #3b0f0f; color: #fca5a5;
+      border: 1px solid #7f1d1d;
+      border-radius: 6px; padding: 8px 20px;
+      font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: background .15s;
+    }
+    .btn-rollback:hover { background: #7f1d1d; }
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.7);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: #1a1d2e;
+      border: 1px solid #2d3148;
+      border-radius: 12px;
+      padding: 28px 32px;
+      max-width: 440px;
+      width: 90%;
+      text-align: center;
+    }
+    .modal-box h3 { font-size: 16px; color: #fff; margin-bottom: 10px; }
+    .modal-box p  { font-size: 13px; color: #94a3b8; margin-bottom: 22px; line-height: 1.6; }
+    .modal-btns   { display: flex; gap: 12px; justify-content: center; }
+
     .cred-box {
       background: #0a1a0a;
       border: 1px solid #15803d;
@@ -239,6 +327,21 @@
   <div id="output"></div>
   <div id="sql-output"></div>
 
+</div>
+
+<!-- Enersee bevestiging modal -->
+<div class="modal-overlay" id="enerseeModal">
+  <div class="modal-box">
+    <h3>Enersee SQL uitvoeren</h3>
+    <p>
+      De Enersee configuratie mag pas worden uitgevoerd <strong>nadat de box fysiek geplaatst is</strong>.<br><br>
+      Ben je zeker dat de box geplaatst is en de meters actief zijn?
+    </p>
+    <div class="modal-btns">
+      <button class="btn-rollback" onclick="closeEnerseeModal()">Nog niet</button>
+      <button class="btn-commit" onclick="proceedEnerseePreview()">Ja, box is geplaatst</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -823,8 +926,12 @@
 
   // ── Render SQL output ─────────────────────────────────────────────────────
 
+  // ── SQL preview / execute state ──────────────────────────────────────────
+  let previewTimeout    = null;
+  const PREVIEW_TTL_SEC = 30;
+
   function renderSQLOutput() {
-    const div = document.getElementById('sql-output');
+    const div     = document.getElementById('sql-output');
     if (!div) return;
     const boxName = document.getElementById('boxName').value.trim() || 'flow';
     let html = '';
@@ -835,13 +942,16 @@
           <div class="output-header">
             <div class="success-badge" style="color:#60a5fa">SQL - Gateway + Meters</div>
             <div class="btn-group">
-              <button class="download-btn" id="copySqlBtn" onclick="copySql('sqlOutput','copySqlBtn')"
+              <button class="download-btn" onclick="copySql('sqlOutput','copySqlBtnA')" id="copySqlBtnA"
                 style="background:#1e3a5f;color:#60a5fa;border-color:#1e4a7a">Copy SQL</button>
               <button class="download-btn" onclick="downloadSQL(lastSQL,'${boxName}_gateway.sql')"
                 style="background:#1e3a5f;color:#60a5fa;border-color:#1e4a7a">Download SQL</button>
+              <button class="download-btn" id="previewSqlBtn" onclick="startSQLPreview('gateway')"
+                style="background:#14532d;color:#4ade80;border-color:#15803d">Preview &amp; Execute</button>
             </div>
           </div>
           <pre id="sqlOutput">${lastSQL.replace(/</g,'&lt;')}</pre>
+          <div id="sql-preview-result"></div>
         </div>`;
     }
 
@@ -851,17 +961,170 @@
           <div class="output-header">
             <div class="success-badge" style="color:#c084fc">SQL - Enersee (na plaatsing uitvoeren)</div>
             <div class="btn-group">
-              <button class="download-btn" id="copyErsBtn" onclick="copySql('enerseeSqlOutput','copyErsBtn')"
+              <button class="download-btn" onclick="copySql('enerseeSqlOutput','copyErsBtnA')" id="copyErsBtnA"
                 style="background:#2e1a47;color:#c084fc;border-color:#6b21a8">Copy Enersee SQL</button>
               <button class="download-btn" onclick="downloadSQL(lastEnerseeSQL,'${boxName}_enersee.sql')"
                 style="background:#2e1a47;color:#c084fc;border-color:#6b21a8">Download Enersee SQL</button>
+              <button class="download-btn" id="previewEnerseeBtn" onclick="confirmEnerseePreview()"
+                style="background:#2e1a47;color:#c084fc;border-color:#6b21a8">Preview &amp; Execute</button>
             </div>
           </div>
           <pre id="enerseeSqlOutput">${lastEnerseeSQL.replace(/</g,'&lt;')}</pre>
+          <div id="enersee-preview-result"></div>
         </div>`;
     }
 
     div.innerHTML = html;
+  }
+
+  // ── Gateway SQL preview & execute ─────────────────────────────────────────
+
+  async function startSQLPreview(type) {
+    const dbLabel = document.getElementById('dbSelect').value;
+    if (!dbLabel) { alert('Selecteer eerst een database.'); return; }
+
+    const sql     = type === 'gateway' ? lastSQL : lastEnerseeSQL;
+    const resultDiv = document.getElementById(type === 'gateway' ? 'sql-preview-result' : 'enersee-preview-result');
+    const btn       = document.getElementById(type === 'gateway' ? 'previewSqlBtn' : 'previewEnerseeBtn');
+
+    if (!sql) return;
+
+    btn.disabled = true;
+    btn.textContent = 'Preview laden...';
+    resultDiv.innerHTML = '<div style="color:#64748b;font-size:12px;margin-top:10px">Uitvoeren met rollback...</div>';
+
+    try {
+      const resp = await fetch(`/api/db/${encodeURIComponent(dbLabel)}/sql/preview`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sql }),
+      });
+      const data = await resp.json();
+      if (!data.ok) throw new Error(data.error);
+
+      renderPreviewResult(resultDiv, data.preview, type);
+      startPreviewCountdown(resultDiv, type, dbLabel, sql);
+
+    } catch (e) {
+      resultDiv.innerHTML = `<div class="error-msg" style="margin-top:10px">Preview fout: ${e.message}</div>`;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Preview & Execute';
+    }
+  }
+
+  function renderPreviewResult(container, rows, type) {
+    if (!rows || rows.length === 0) {
+      container.innerHTML = '<div style="color:#64748b;font-size:12px;margin-top:10px">Geen rijen teruggekomen.</div>';
+      return;
+    }
+    const cols = Object.keys(rows[0]);
+    const thead = `<tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr>`;
+    const tbody = rows.map(r =>
+      `<tr>${cols.map(c => `<td>${r[c] ?? ''}</td>`).join('')}</tr>`
+    ).join('');
+
+    const color = type === 'gateway' ? '#60a5fa' : '#c084fc';
+
+    container.innerHTML = `
+      <div style="margin-top:12px;font-size:12px;color:#64748b">
+        Preview (uitgevoerd met rollback) — ${rows.length} rij${rows.length !== 1 ? 'en' : ''}
+      </div>
+      <div class="preview-wrap">
+        <table class="preview-table">${thead}${tbody}</table>
+      </div>
+      <div class="confirm-bar">
+        <div class="timeout-msg" id="timeout-msg-${type}">
+          Ziet er goed uit? Klik Commit om definitief op te slaan.
+        </div>
+        <button class="btn-rollback" onclick="cancelExecute('${type}')">Annuleer</button>
+        <button class="btn-commit" onclick="commitSQL('${type}')"
+          style="border-color:${color};color:${color};background:${type === 'gateway' ? '#0c2a0c' : '#1a0a2e'}">
+          Commit
+        </button>
+      </div>`;
+  }
+
+  function startPreviewCountdown(container, type, dbLabel, sql) {
+    if (previewTimeout) clearInterval(previewTimeout);
+    let remaining = PREVIEW_TTL_SEC;
+
+    previewTimeout = setInterval(() => {
+      remaining--;
+      const msg = document.getElementById(`timeout-msg-${type}`);
+      if (!msg) { clearInterval(previewTimeout); return; }
+
+      if (remaining <= 0) {
+        clearInterval(previewTimeout);
+        const resultDiv = document.getElementById(type === 'gateway' ? 'sql-preview-result' : 'enersee-preview-result');
+        if (resultDiv) resultDiv.innerHTML = `
+          <div class="warn-box" style="margin-top:10px">
+            Preview verlopen (${PREVIEW_TTL_SEC}s). Klik opnieuw op "Preview &amp; Execute" om opnieuw te starten.
+          </div>`;
+        return;
+      }
+
+      if (remaining <= 10) {
+        msg.classList.add('urgent');
+        msg.textContent = `Preview verloopt over ${remaining}s — commit of annuleer!`;
+      }
+    }, 1000);
+  }
+
+  function cancelExecute(type) {
+    if (previewTimeout) { clearInterval(previewTimeout); previewTimeout = null; }
+    const resultDiv = document.getElementById(type === 'gateway' ? 'sql-preview-result' : 'enersee-preview-result');
+    if (resultDiv) resultDiv.innerHTML = '<div style="color:#64748b;font-size:12px;margin-top:10px">Geannuleerd — geen wijzigingen aangebracht.</div>';
+  }
+
+  async function commitSQL(type) {
+    if (previewTimeout) { clearInterval(previewTimeout); previewTimeout = null; }
+
+    const dbLabel   = document.getElementById('dbSelect').value;
+    const sql       = type === 'gateway' ? lastSQL : lastEnerseeSQL;
+    const resultDiv = document.getElementById(type === 'gateway' ? 'sql-preview-result' : 'enersee-preview-result');
+
+    resultDiv.innerHTML = '<div style="color:#64748b;font-size:12px;margin-top:10px">Uitvoeren met commit...</div>';
+
+    try {
+      const resp = await fetch(`/api/db/${encodeURIComponent(dbLabel)}/sql/execute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sql }),
+      });
+      const data = await resp.json();
+      if (!data.ok) throw new Error(data.error);
+
+      const rows = data.rows || [];
+      const cols = rows.length ? Object.keys(rows[0]) : [];
+      const color = type === 'gateway' ? '#4ade80' : '#c084fc';
+      const thead = cols.length ? `<tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr>` : '';
+      const tbody = rows.map(r => `<tr>${cols.map(c => `<td>${r[c] ?? ''}</td>`).join('')}</tr>`).join('');
+
+      resultDiv.innerHTML = `
+        <div style="margin-top:12px;font-size:13px;font-weight:600;color:${color}">
+          Succesvol gecommit — ${rows.length} rij${rows.length !== 1 ? 'en' : ''} aangemaakt
+        </div>
+        ${rows.length ? `<div class="preview-wrap"><table class="preview-table">${thead}${tbody}</table></div>` : ''}`;
+
+    } catch (e) {
+      resultDiv.innerHTML = `<div class="error-msg" style="margin-top:10px">Commit fout: ${e.message}</div>`;
+    }
+  }
+
+  // ── Enersee confirm popup ─────────────────────────────────────────────────
+
+  function confirmEnerseePreview() {
+    document.getElementById('enerseeModal').classList.add('open');
+  }
+
+  function closeEnerseeModal() {
+    document.getElementById('enerseeModal').classList.remove('open');
+  }
+
+  function proceedEnerseePreview() {
+    closeEnerseeModal();
+    startSQLPreview('enersee');
   }
 
   // ── Download / Copy helpers ───────────────────────────────────────────────

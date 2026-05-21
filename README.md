@@ -1,5 +1,5 @@
 # AI Acceleration Labs — Node-RED Generator
-## Workfile voor Claude
+
 
 ---
 
@@ -502,3 +502,11 @@ Als niet ingelogd → UI toont "Az Login" knop → `POST /api/iothub/login` → 
 | Azure IoT Hub | ~10 min | ~30 sec (automatisch) |
 | Stickers | ~15 min | ~2 min (batch print) |
 | **Totaal** | **~3 uur** | **~45 min** |
+
+Sessie 21/05/2026 — toevoegingen:
+
+SQL preview/execute flow (gateway + Enersee)
+db/connection.js: previewSQL (altijd rollback) + executeSQL (commit)
+db/routes.js: POST /api/db/:label/sql/preview + POST /api/db/:label/sql/execute
+UI: Preview & Execute knop → tabel met resultaten → 30s countdown → Commit of Annuleer
+Enersee: popup "box geplaatst?" voor preview start
