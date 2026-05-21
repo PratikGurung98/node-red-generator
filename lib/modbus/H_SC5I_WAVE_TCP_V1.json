@@ -1,0 +1,513 @@
+[
+    {
+        "id": "d819ab02332f3584",
+        "type": "group",
+        "z": "2ae47dcf5e37c95c",
+        "name": "H_SC5I_WAVE_TCP_V1 - {meetpunt naam}",
+        "style": {
+            "label": true,
+            "fill": "#5caa7e",
+            "color": "#ffffff"
+        },
+        "nodes": [
+            "ab88b815c110c26c",
+            "674eeb60475044a9",
+            "775ec20ad81fb518",
+            "783ef5f3725317d0",
+            "4549a227ea4ed902",
+            "f95126a44ad94e89",
+            "8b7de786e3d00923",
+            "48bcae80b3abc634",
+            "77742ecd700276ba",
+            "f3eb131313b5d0cb",
+            "629fec46eb47d80d",
+            "5fc3e038dc1eb119",
+            "d9d23cafa26b2f54",
+            "0a83cb868ad610fb",
+            "46825a8d24199b9f",
+            "bfea9172dc75f3d6",
+            "f6e4085f4aa34110",
+            "be9f696219ef9022",
+            "feb9b50f0aa21933",
+            "327bcc166e30093a",
+            "b8232cabda09aa90",
+            "23fc276a85e67e94"
+        ],
+        "x": 94,
+        "y": 1159,
+        "w": 1352,
+        "h": 322
+    },
+    {
+        "id": "ab88b815c110c26c",
+        "type": "modbus-getter",
+        "z": "2ae47dcf5e37c95c",
+        "g": "d819ab02332f3584",
+        "name": "Read",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "unitid": "1",
+        "dataType": "InputRegister",
+        "adr": "100",
+        "quantity": "8",
+        "server": "dc25d5166071f856",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": false,
+        "delayOnStart": false,
+        "startDelayTime": "0",
+        "x": 390,
+        "y": 1240,
+        "wires": [
+            [
+                "674eeb60475044a9"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "674eeb60475044a9",
+        "type": "function",
+        "z": "2ae47dcf5e37c95c",
+        "g": "d819ab02332f3584",
+        "name": "Parse SC5X00021 (energy)",
+        "func": "const buffer = new ArrayBuffer(4);\nconst intView = new Uint32Array(buffer);\nconst floatView = new Float32Array(buffer);\nlet combined = 0;\nlet data = {};\n\n// helper to combine 2x 16-bit registers (little-endian word order)\nfunction readFloatLE(lowIndex) {\n    combined = ((msg.payload[lowIndex + 1] << 16) | (msg.payload[lowIndex] & 0xFFFF)) >>> 0;\n    intView[0] = combined;\n    return Number(floatView[0].toFixed(3));\n}\n\nconst registerOffsets = {\n    energyUnit: 0,              // 30101\n    energyValue: 2,             // 30103-30104\n    energyTariffOneValue: 4,    // 30105-30106\n    energyTariffTwoValue: 6,    // 30107-30108\n};\n\n// read values\nconst energyUnitId = msg.payload[registerOffsets.energyUnit];\nconst energyValue = readFloatLE(registerOffsets.energyValue);\nconst energyTariffOneValue = readFloatLE(registerOffsets.energyTariffOneValue);\nconst energyTariffTwoValue = readFloatLE(registerOffsets.energyTariffTwoValue);\n\n// decode units\nconst energyUnits = {\n    19: 'kilowattHour',\n    146: 'megawattHour',\n    126: 'megajoule',\n    226: 'gigajoule',\n    147: 'kilobritishThermalUnits',\n    148: 'megabritishThermalUnits',\n    227: 'megacalorie',\n    228: 'gigacalorie',\n};\n\ndata[\"energyUnit\"] = energyUnits[energyUnitId] || \"unknown\";\nswitch (energyUnitId) {\n    case 19:\n        data[\"energyValue\"] = energyValue * 1;\n        data[\"energyTariffOneValue\"] = energyTariffOneValue * 1;\n        data[\"energyTariffTwoValue\"] = energyTariffTwoValue * 1;\n        break;\n    case 146:\n        data[\"energyValue\"] = energyValue * 1000;\n        data[\"energyTariffOneValue\"] = energyTariffOneValue * 1000;\n        data[\"energyTariffTwoValue\"] = energyTariffTwoValue * 1000;\n        break;\n    case 126:\n        data[\"energyValue\"] = energyValue / 3.6;\n        data[\"energyTariffOneValue\"] = energyTariffOneValue * 3.6;\n        data[\"energyTariffTwoValue\"] = energyTariffTwoValue * 3.6;\n        break;\n    case 226:\n        data[\"energyValue\"] = energyValue * 277.777778;\n        data[\"energyTariffOneValue\"] = energyTariffOneValue * 277.777778;\n        data[\"energyTariffTwoValue\"] = energyTariffTwoValue * 277.777778;\n        break;\n    case 147:\n        data[\"energyValue\"] = energyValue * 0.293071;\n        data[\"energyTariffOneValue\"] = energyTariffOneValue * 0.293071;\n        data[\"energyTariffTwoValue\"] = energyTariffTwoValue * 0.293071;\n        break;\n    case 148:\n        data[\"energyValue\"] = energyValue * 293.071;\n        data[\"energyTariffOneValue\"] = energyTariffOneValue * 293.071;\n        data[\"energyTariffTwoValue\"] = energyTariffTwoValue * 293.071;\n        break;\n    case 227:\n        data[\"energyValue\"] = energyValue * 1.162222;\n        data[\"energyTariffOneValue\"] = energyTariffOneValue * 1.162222;\n        data[\"energyTariffTwoValue\"] = energyTariffTwoValue * 1.162222;\n        break;\n    case 228:\n        data[\"energyValue\"] = energyValue * 1162.222;\n        data[\"energyTariffOneValue\"] = energyTariffOneValue * 1162.222;\n        data[\"energyTariffTwoValue\"] = energyTariffTwoValue * 1162.222;\n        break;\n\n    default:\n        break;\n}\n\nlet nmsg = {};\nnmsg.topic = \"telemetry\";\nnmsg.payload = data;\n\nreturn nmsg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 580,
+        "y": 1240,
+        "wires": [
+            [
+                "775ec20ad81fb518"
+            ]
+        ]
+    },
+    {
+        "id": "775ec20ad81fb518",
+        "type": "json",
+        "z": "2ae47dcf5e37c95c",
+        "g": "d819ab02332f3584",
+        "name": "Conv",
+        "property": "payload",
+        "action": "obj",
+        "pretty": false,
+        "x": 810,
+        "y": 1240,
+        "wires": [
+            [
+                "f6e4085f4aa34110"
+            ]
+        ]
+    },
+    {
+        "id": "783ef5f3725317d0",
+        "type": "inject",
+        "z": "2ae47dcf5e37c95c",
+        "g": "d819ab02332f3584",
+        "name": "15min trigger",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "900",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "1",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 220,
+        "y": 1240,
+        "wires": [
+            [
+                "ab88b815c110c26c",
+                "b8232cabda09aa90"
+            ]
+        ]
+    },
+    {
+        "id": "4549a227ea4ed902",
+        "type": "modbus-getter",
+        "z": "2ae47dcf5e37c95c",
+        "g": "d819ab02332f3584",
+        "name": "Read",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "unitid": "1",
+        "dataType": "InputRegister",
+        "adr": "300",
+        "quantity": "4",
+        "server": "dc25d5166071f856",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": false,
+        "delayOnStart": true,
+        "startDelayTime": "1",
+        "x": 390,
+        "y": 1340,
+        "wires": [
+            [
+                "8b7de786e3d00923"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "f95126a44ad94e89",
+        "type": "modbus-getter",
+        "z": "2ae47dcf5e37c95c",
+        "g": "d819ab02332f3584",
+        "name": "Read",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "unitid": "1",
+        "dataType": "InputRegister",
+        "adr": "720",
+        "quantity": "6",
+        "server": "dc25d5166071f856",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": false,
+        "delayOnStart": true,
+        "startDelayTime": "2",
+        "x": 390,
+        "y": 1440,
+        "wires": [
+            [
+                "48bcae80b3abc634"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "8b7de786e3d00923",
+        "type": "function",
+        "z": "2ae47dcf5e37c95c",
+        "g": "d819ab02332f3584",
+        "name": "Parse SC5X00021 (volume)",
+        "func": "const buffer = new ArrayBuffer(4);\nconst intView = new Uint32Array(buffer);\nconst floatView = new Float32Array(buffer);\nlet combined = 0;\nlet data = {};\n\n// helper to combine 2x 16-bit registers (little-endian word order)\nfunction readFloatLE(lowIndex) {\n    combined = ((msg.payload[lowIndex + 1] << 16) | (msg.payload[lowIndex] & 0xFFFF)) >>> 0;\n    intView[0] = combined;\n    return Number(floatView[0].toFixed(3));\n}\n\nconst registerOffsets = {\n    volumeUnit: 0,    // 30301\n    volumeValue: 2,   // 30303-30304\n};\n\n// read values\nconst volumeUnitId = msg.payload[registerOffsets.volumeUnit];\nconst volumeValue = readFloatLE(registerOffsets.volumeValue);\n\n// decode units\nconst volumeUnits = {\n    80: 'cubicMetre',\n    82: 'litre',\n    83: 'usGallon',\n    229: 'thousandUsGallons',\n};\n\ndata[\"volumeUnit\"] = volumeUnits[volumeUnitId] || \"unknown\";\nswitch (volumeUnitId) {\n    case 80:\n        data[\"volumeValue\"] = volumeValue * 1;\n        break;\n    case 82:\n        data[\"volumeValue\"] = volumeValue / 1000;\n        break;\n    case 83:\n        data[\"volumeValue\"] = volumeValue * 0.00378541;\n        break;\n    case 229:\n        data[\"volumeValue\"] = volumeValue * 3.78541;\n        break;\n\n    default:\n        break;\n}\n\nlet nmsg = {};\nnmsg.topic = \"telemetry\";\nnmsg.payload = data;\n\nreturn nmsg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 580,
+        "y": 1340,
+        "wires": [
+            [
+                "f3eb131313b5d0cb"
+            ]
+        ]
+    },
+    {
+        "id": "48bcae80b3abc634",
+        "type": "function",
+        "z": "2ae47dcf5e37c95c",
+        "g": "d819ab02332f3584",
+        "name": "Parse SC5X00021 (temperature)",
+        "func": "const buffer = new ArrayBuffer(4);\nconst intView = new Uint32Array(buffer);\nconst floatView = new Float32Array(buffer);\nlet combined = 0;\nlet data = {};\n\n// helper to combine 2x 16-bit registers (little-endian word order)\nfunction readFloatLE(lowIndex) {\n    combined = ((msg.payload[lowIndex + 1] << 16) | (msg.payload[lowIndex] & 0xFFFF)) >>> 0;\n    intView[0] = combined;\n    return Number(floatView[0].toFixed(3));\n}\n\nconst registerOffsets = {\n    tempUnit: 0,      // 30721\n    tempHighValue: 2, // 30723-30724\n    tempLowValue: 4   // 30725-30726\n};\n\n// read values\nconst tempUnitId = msg.payload[registerOffsets.tempUnit];\nconst tempHighValue = readFloatLE(registerOffsets.tempHighValue);\nconst tempLowValue = readFloatLE(registerOffsets.tempLowValue);\n\n// decode units\nconst tempUnits = {\n    62: 'celsius',\n};\n\ndata[\"tempUnit\"] = tempUnits[tempUnitId] || \"unknown\";\nswitch (tempUnitId) {\n    case 62:\n        data[\"tempHighValue\"] = tempHighValue * 1;\n        data[\"tempLowValue\"] = tempLowValue * 1;\n        break;\n\n    default:\n        break;\n}\n\nlet nmsg = {};\nnmsg.topic = \"telemetry\";\nnmsg.payload = data;\n\nreturn nmsg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 600,
+        "y": 1440,
+        "wires": [
+            [
+                "77742ecd700276ba"
+            ]
+        ]
+    },
+    {
+        "id": "77742ecd700276ba",
+        "type": "json",
+        "z": "2ae47dcf5e37c95c",
+        "g": "d819ab02332f3584",
+        "name": "Conv",
+        "property": "payload",
+        "action": "obj",
+        "pretty": false,
+        "x": 810,
+        "y": 1440,
+        "wires": [
+            [
+                "feb9b50f0aa21933"
+            ]
+        ]
+    },
+    {
+        "id": "f3eb131313b5d0cb",
+        "type": "json",
+        "z": "2ae47dcf5e37c95c",
+        "g": "d819ab02332f3584",
+        "name": "Conv",
+        "property": "payload",
+        "action": "obj",
+        "pretty": false,
+        "x": 810,
+        "y": 1340,
+        "wires": [
+            [
+                "be9f696219ef9022"
+            ]
+        ]
+    },
+    {
+        "id": "629fec46eb47d80d",
+        "type": "comment",
+        "z": "2ae47dcf5e37c95c",
+        "g": "d819ab02332f3584",
+        "name": "Set modbus address",
+        "info": "Unit-Id is modbus adderss",
+        "x": 430,
+        "y": 1400,
+        "wires": []
+    },
+    {
+        "id": "5fc3e038dc1eb119",
+        "type": "comment",
+        "z": "2ae47dcf5e37c95c",
+        "g": "d819ab02332f3584",
+        "name": "Set modbus address",
+        "info": "Unit-Id is modbus adderss",
+        "x": 430,
+        "y": 1300,
+        "wires": []
+    },
+    {
+        "id": "d9d23cafa26b2f54",
+        "type": "comment",
+        "z": "2ae47dcf5e37c95c",
+        "g": "d819ab02332f3584",
+        "name": "Stel trigger offset in",
+        "info": "inject once after (modbus_address) seconds, then",
+        "x": 210,
+        "y": 1200,
+        "wires": []
+    },
+    {
+        "id": "0a83cb868ad610fb",
+        "type": "comment",
+        "z": "2ae47dcf5e37c95c",
+        "g": "d819ab02332f3584",
+        "name": "Set modbus address",
+        "info": "Unit-Id is modbus adderss",
+        "x": 430,
+        "y": 1200,
+        "wires": []
+    },
+    {
+        "id": "46825a8d24199b9f",
+        "type": "function",
+        "z": "2ae47dcf5e37c95c",
+        "g": "d819ab02332f3584",
+        "name": "H_SC5I_WAVE_TCP_V1",
+        "func": "// Haal de globale MID variabele op (message ID)\nlet mid = global.get(\"mid\"); // NaN if not set\n\n// Stel de constante Dev in\nconst Dev = \"ASSET_ID_START_MET_36\";\n\n// Definieer de mapping van datatypes naar ID's\nconst idMapping = {\n    \"energyValue\": 9600,\n    \"energyTariffOneValue\": 9601,\n    \"energyTariffTwoValue\": 9602,\n    \"volumeValue\": 9650,\n    \"tempHighValue\": 9700,\n    \"tempLowValue\": 9750,\n};\n\n//Maak mapping case-insensitive door keys ook in lowercase aan te spreken\nconst mappingLower = {};\nObject.keys(idMapping).forEach(k => mappingLower[k.toLowerCase()] = idMapping[k]);\n\n// Begin met het resultaat-object\nlet result = {\n    MID: mid,\n    D: [\n        {\n            Dev: Dev,\n            ED: [],\n            MD: []\n        }\n    ]\n};\n\n// Payload van binnenkomend bericht\nconst payloadData = msg.payload || {};\nif (typeof payloadData !== \"object\") {\n    node.warn(\"msg.payload is geen object\");\n}\n\n// Vind de device objecten\nconst deviceObjects = Object.values(payloadData).filter(\n    v => v && typeof v === \"object\" && !Array.isArray(v)\n);\n\n// Loop door payload keys\ndeviceObjects.forEach((devObj, devIdx) => {\n    Object.keys(devObj).forEach(key => {\n        let id = idMapping[key];\n        if (typeof id === \"undefined\") {\n            id = mappingLower[key.toLowerCase()];\n        }\n\n        if (typeof id !== \"undefined\") {\n            // Zorg dat de waarde een getal wordt: vervang komma -> punt en parse\n            let rawVal = devObj[key];\n\n            // Als waarde een array / object / null is, skip\n            if (rawVal === null || typeof rawVal === \"object\") {\n                node.warn(`Overslaan ${key}: waarde is geen primitief (${typeof rawVal}) [deviceIdx=${devIdx}]`);\n                return; // return i.p.v. continue (we zitten in forEach)\n            }\n\n            let valStr = String(rawVal).trim().replace(\",\", \".\");\n            let num = parseFloat(valStr);\n\n            if (!Number.isFinite(num)) {\n                node.warn(`Ongeldige numerieke waarde voor ${key}: \"${rawVal}\" — overslaan [deviceIdx=${devIdx}]`);\n                return;\n            }\n\n            result.D[0].MD.push({\n                Id: id,\n                Val: num\n            });\n\n        } else {\n            node.debug(`Key niet in mapping: ${key} [deviceIdx=${devIdx}]`);\n        }\n    });\n});\n\n// Voeg een timestamp toe in het juiste formaat\nresult.D[0].TS = new Date().toISOString();\n\n// Alleen verhogen als we items toegevoegd hebben\nif (result.D[0].MD.length > 0) {\n    global.set(\"mid\", mid + 1);\n}\n\n// Stel de nieuwe payload in\nmsg.payload = result;\n\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1310,
+        "y": 1340,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "bfea9172dc75f3d6",
+        "type": "comment",
+        "z": "2ae47dcf5e37c95c",
+        "g": "d819ab02332f3584",
+        "name": "Voer Vlegel ASSET ID in",
+        "info": "Het gaat hier over:\nconst Dev = \"ASSET_ID_START_MET_36\";",
+        "x": 1310,
+        "y": 1300,
+        "wires": []
+    },
+    {
+        "id": "f6e4085f4aa34110",
+        "type": "change",
+        "z": "2ae47dcf5e37c95c",
+        "g": "d819ab02332f3584",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "source",
+                "pt": "msg",
+                "to": "energy",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 960,
+        "y": 1240,
+        "wires": [
+            [
+                "327bcc166e30093a"
+            ]
+        ]
+    },
+    {
+        "id": "be9f696219ef9022",
+        "type": "change",
+        "z": "2ae47dcf5e37c95c",
+        "g": "d819ab02332f3584",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "source",
+                "pt": "msg",
+                "to": "volume",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 960,
+        "y": 1340,
+        "wires": [
+            [
+                "327bcc166e30093a"
+            ]
+        ]
+    },
+    {
+        "id": "feb9b50f0aa21933",
+        "type": "change",
+        "z": "2ae47dcf5e37c95c",
+        "g": "d819ab02332f3584",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "source",
+                "pt": "msg",
+                "to": "temperature",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 960,
+        "y": 1440,
+        "wires": [
+            [
+                "327bcc166e30093a"
+            ]
+        ]
+    },
+    {
+        "id": "327bcc166e30093a",
+        "type": "join",
+        "z": "2ae47dcf5e37c95c",
+        "g": "d819ab02332f3584",
+        "name": "",
+        "mode": "custom",
+        "build": "object",
+        "property": "payload",
+        "propertyType": "msg",
+        "key": "source",
+        "joiner": "\\n",
+        "joinerType": "str",
+        "accumulate": false,
+        "timeout": "",
+        "count": "3",
+        "reduceRight": false,
+        "reduceExp": "",
+        "reduceInit": "",
+        "reduceInitType": "",
+        "reduceFixup": "",
+        "x": 1130,
+        "y": 1340,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "b8232cabda09aa90",
+        "type": "delay",
+        "z": "2ae47dcf5e37c95c",
+        "g": "d819ab02332f3584",
+        "name": "",
+        "pauseType": "delay",
+        "timeout": "1",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 240,
+        "y": 1340,
+        "wires": [
+            [
+                "23fc276a85e67e94",
+                "4549a227ea4ed902"
+            ]
+        ]
+    },
+    {
+        "id": "23fc276a85e67e94",
+        "type": "delay",
+        "z": "2ae47dcf5e37c95c",
+        "g": "d819ab02332f3584",
+        "name": "",
+        "pauseType": "delay",
+        "timeout": "1",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 240,
+        "y": 1440,
+        "wires": [
+            [
+                "f95126a44ad94e89"
+            ]
+        ]
+    }
+]

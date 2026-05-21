@@ -1,0 +1,22 @@
+[
+    {
+        "id": "64feb8bc9b36930e",
+        "type": "function",
+        "z": "c0dcfcea1760ff7e",
+        "name": "E_630ML4_LORAWAN_3DEVICES",
+        "func": "// Node-RED Function node: ML4 decoder\n// Outputs: 3 (CH01, CH02, CH03)\n\nconst Dev1 = \"36xxxxxxxxxxxx01\"  // jouw dev id CH01\nconst Dev2 = \"36xxxxxxxxxxxx02\"  // jouw dev id CH02\nconst Dev3 = \"36xxxxxxxxxxxx03\"  // jouw dev id CH03\n\nconst scaleBy1000 = [4200, 4300]\nconst ids = [4200, 4300, 4600, 4500]\n\nconst HEADER_LEN = 3\n\nvar buf = (typeof msg.payload === \"string\")\n    ? Buffer.from(msg.payload, \"base64\")\n    : msg.payload\n\nif (!Buffer.isBuffer(buf) || buf.length < HEADER_LEN + 48) {\n    node.error(\"Invalid payload - verwacht 51 bytes\", msg)\n    return null\n}\n\nfunction readF(off) {\n    if (off + 4 > buf.length) return null\n    const v = buf.readFloatBE(off)\n    if (isNaN(v)) return null\n    return Math.round(v * 100) / 100\n}\n\nconst battery = (((buf[0] << 8) | buf[1]) & 0x7fff) / 1000\n\n// 12 floats uitlezen\nconst values = []\nfor (let i = 0; i < 12; i++) {\n    values.push(readF(HEADER_LEN + i * 4))\n}\n\nfunction buildDevice(dev, vals) {\n    const d = {\n        Dev: dev,\n        TS: msg.time ? new Date(msg.time).toISOString() : new Date().toISOString(),\n        ED: [],\n        MD: []\n    }\n\n    for (let i = 0; i < ids.length; i++) {\n        let val = vals[i]\n        if (val != null) {\n            if (scaleBy1000.includes(ids[i])) {\n                val = Math.round((val / 1000) * 1000) / 1000\n            }\n            d.MD.push({ Id: ids[i], Val: val })\n        }\n    }\n\n    d.MD.push({ Id: 7200, Val: battery })\n\n    if (msg.snr !== undefined)\n        d.MD.push({ Id: 5400, Val: parseFloat(msg.snr) })\n    if (msg.rssi !== undefined)\n        d.MD.push({ Id: 5500, Val: parseFloat(msg.rssi) })\n    if (msg.dr?.spreadFactor !== undefined)\n        d.MD.push({ Id: 5200, Val: parseFloat(msg.dr.spreadFactor) })\n\n    return d\n}\n\nconst mid = global.get(\"mid\") || 0\n\nconst out1 = { ...msg, payload: { MID: mid, D: [buildDevice(Dev1, values.slice(0, 4))] } }\nconst out2 = { ...msg, payload: { MID: mid + 1, D: [buildDevice(Dev2, values.slice(4, 8))] } }\nconst out3 = { ...msg, payload: { MID: mid + 2, D: [buildDevice(Dev3, values.slice(8, 12))] } }\n\nglobal.set(\"mid\", mid + 3)\n\nreturn [out1, out2, out3]",
+        "outputs": 3,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 480,
+        "y": 220,
+        "wires": [
+            [],
+            [],
+            []
+        ]
+    }
+]

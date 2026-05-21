@@ -1,0 +1,40 @@
+[
+    {
+        "id": "8bc172d75719eae1",
+        "type": "function",
+        "z": "28fc522996330822",
+        "name": "G_DRY_EM300_LORA_V1 - {meetpunt naam}",
+        "func": "// Haal de globale MID variabele op\nlet mid = global.get(\"mid\") || 0;\n\n// Stel de constante Dev in (start met 36)\nconst Dev = \"ASSET_ID_START_MET_36\";\n\n// Stel de pulse omvormings waarde in\nconst PulseConversionValue = 1;\n\n// Definieer de mapping van datatypes naar ID's\nconst idMapping = {\n    \"battery\": 4900,\n\n    \"humidity\": 6900,\n    //\"pulse_conv\": xxxx,\n    \"temperature\": 6800,\n    \"water\": 5600, // dit is gas maar meter stuurt 'water'\n    //\"water_conv\": xxxx,\n\n    \"bandwidth\": 5100,\n    \"spreadFactor\": 5200,\n    \"freq\": 5300,\n    \"snr\": 5400,\n    \"rssi\": 5500\n};\nconst normalizedIdMapping = Object.create(null); // avoids prototype issues\nfor (const [k, v] of Object.entries(idMapping)) {\n    normalizedIdMapping[k.toLowerCase()] = v;\n}\n\n// Begin met het resultaat-object\nlet result = {\n    MID: mid,\n    D: [\n        {\n            Dev: Dev,\n            ED: [],\n            MD: []\n        }\n    ]\n};\n\n// Timestamp van ontvangst\nif (msg.time) {\n    const date = new Date(msg.time);\n    if (!isNaN(date.getTime())) {\n        result.D[0].TS = date.toISOString();\n    }\n}\n\n// Haal alle key-value paren uit de payload\nlet payloadData = msg.object;\n\n// Voeg elk key-value paar toe als een object in het MD array, alleen als het in de mapping staat\nif (payloadData && typeof payloadData === \"object\") {\n    for (const [key, raw] of Object.entries(payloadData)) {\n        // process only keys that exist in idMapping\n        const normalizedKey = key.toLowerCase();\n        const id = normalizedIdMapping[normalizedKey];\n        if (id === undefined) continue;\n\n        // strict numeric parse\n        let val = Number(raw);\n        if (!Number.isFinite(val)) continue;\n\n        // pulse conversion\n        if (normalizedKey === \"water\" && typeof PulseConversionValue === \"number\") {\n            val *= PulseConversionValue;\n        }\n\n        result.D[0].MD.push({\n            Id: id,\n            Val: val\n        });\n    }\n}\n\n// Haal bandwidth en spreadfactor uit msg.dr\nif (msg.dr && typeof msg.dr === \"object\") {\n    for (const key of [\"bandwidth\", \"spreadFactor\"]) {\n        // skip if key is not in msg.dr or not in idMapping\n        if (!Object.prototype.hasOwnProperty.call(msg.dr, key)) continue;\n        const normalizedKey = key.toLowerCase();\n        const id = normalizedIdMapping[normalizedKey];\n        if (id === undefined) continue;\n\n        // strict numeric parse\n        const val = Number(msg.dr[key]);\n        if (!Number.isFinite(val)) continue;\n\n        result.D[0].MD.push({\n            Id: id,\n            Val: val\n        });\n    }\n}\n\n// Haal freq, snr en rssi UIT msg zelf\nfor (const key of [\"freq\", \"snr\", \"rssi\"]) {\n    // skip if key not in msg or not mapped\n    if (!Object.prototype.hasOwnProperty.call(msg, key)) continue;\n    const normalizedKey = key.toLowerCase();\n    const id = normalizedIdMapping[normalizedKey];\n    if (id === undefined) continue;\n\n    const val = Number(msg[key]);\n    if (!Number.isFinite(val)) continue;\n\n    // strict numeric parse\n    result.D[0].MD.push({\n        Id: id,\n        Val: val\n    });\n}\n\n// Verhoog de MID en sla deze op in de globale context\nglobal.set(\"mid\", mid + 1);\n\n// Stel de nieuwe payload in\nmsg.payload = result;\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1060,
+        "y": 540,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "1637d22b79473f74",
+        "type": "comment",
+        "z": "28fc522996330822",
+        "name": "Controleer pulse waarde omvorming ",
+        "info": "Het gaat hier over:\nconst PulseConversionValue = 1;",
+        "x": 1020,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "0f260630850fd9e0",
+        "type": "comment",
+        "z": "28fc522996330822",
+        "name": "Voer Vlegel ASSET ID in",
+        "info": "Het gaat hier over:\nconst Dev = \"ASSET_ID_START_MET_36\";",
+        "x": 990,
+        "y": 460,
+        "wires": []
+    }
+]

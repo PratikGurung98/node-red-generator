@@ -1,0 +1,40 @@
+[
+    {
+        "id": "844f5e74d045eef8",
+        "type": "function",
+        "z": "2ae47dcf5e37c95c",
+        "name": "G_FLASHO_LORA_V1 - {meetpunt naam}",
+        "func": "// Watteco → Vlegel IoT Hub formatter\n// Output 1 = pulses (Id 2000)\n// Output 2 = battery (Id 7200)\n\nlet mid = global.get(\"mid\") || 0;\n\n// Stel de constante Dev in (start met 36)\nconst Dev = \"ASSET_ID_START_MET_36\";\n\n// Stel de pulse omvormings waarde in\nconst PulseConversionValue = 1;\nconst PulseDataTypeId = 5600;\n\nif (typeof PulseConversionValue !== \"number\" || !Number.isFinite(PulseConversionValue)) {\n    node.error(\"PulseConversionValue must be a finite number.\", msg);\n    return [null, null];\n}\nif (typeof PulseDataTypeId !== \"number\" || !Number.isInteger(PulseDataTypeId) || PulseDataTypeId <= 0) {\n    node.error(\"PulseConvertedId must be a positive integer.\", msg);\n    return [null, null];\n}\n\n// -------- helpers --------\nfunction u16(bytes, i) {\n    return (bytes[i] << 8) | bytes[i + 1];\n}\nfunction u32(bytes, i) {\n    return ((bytes[i] << 24) >>> 0) |\n        (bytes[i + 1] << 16) |\n        (bytes[i + 2] << 8) |\n        bytes[i + 3];\n}\n\nfunction buildResult(ts) {\n    return {\n        MID: mid,\n        D: [{\n            Dev: Dev,\n            TS: ts,\n            ED: [],\n            MD: []\n        }]\n    };\n}\n\nfunction addRadioMeta(result, msg) {\n    if (msg.snr !== undefined)\n        result.D[0].MD.push({ Id: 5400, Val: parseFloat(msg.snr) });\n    if (msg.rssi !== undefined)\n        result.D[0].MD.push({ Id: 5500, Val: parseFloat(msg.rssi) });\n    if (msg.dr && msg.dr.spreadFactor !== undefined)\n        result.D[0].MD.push({ Id: 5200, Val: parseFloat(msg.dr.spreadFactor) });\n}\n\n// -------- payload extract --------\nconst meta = (typeof msg.payload === \"object\" && msg.payload) ? msg.payload : {};\nconst b64 =\n    (meta && typeof meta.payload === \"string\" && meta.payload) ||\n    (typeof msg.payload === \"string\" ? msg.payload : null) ||\n    (meta && meta.payload && typeof meta.payload.payload === \"string\" ? meta.payload.payload : null);\n\nif (!b64) {\n    node.error(\"No base64 payload found\", msg);\n    return [null, null];\n}\n\nconst bytes = Buffer.from(b64, \"base64\");\n\n// timestamp\nconst TS = (msg.time ? new Date(msg.time) : new Date()).toISOString();\n\n// Watteco frame\nconst cmd = bytes[1];\nconst cluster = u16(bytes, 2);\nconst attr = u16(bytes, 4);\n\n// Only handle REPORT (0x0A)\nif (cmd !== 0x0a) return [null, null];\n\n\n// ======================\n// 1️⃣ PULSE COUNTER\n// cluster 0x000f, attr 0x0402\n// ======================\nif (cluster === 0x000f && attr === 0x0402) {\n    const pulse_counter = u32(bytes, 7);\n\n    const result = buildResult(TS);\n\n    result.D[0].MD.push({\n        Id: PulseDataTypeId,\n        Val: pulse_counter * PulseConversionValue\n    });\n\n    addRadioMeta(result, msg);\n\n    global.set(\"mid\", mid + 1);\n    msg.payload = result;\n    return [msg, null];\n}\n\n\n// ======================\n// 2️⃣ BATTERY\n// cluster 0x0050, attr 0x0006\n// ======================\nif (cluster === 0x0050 && attr === 0x0006) {\n    const rr = bytes[9]; // power source mask\n    let idx = 10;\n\n    const sources = [0x01, 0x02, 0x04, 0x08, 0x10];\n    let disposable_mv = null;\n\n    for (const bit of sources) {\n        if (rr & bit) {\n            const mv = u16(bytes, idx);\n            if (bit === 0x04) disposable_mv = mv; // disposable battery\n            idx += 2;\n        }\n    }\n\n    const result = buildResult(TS);\n\n    if (disposable_mv != null) {\n        result.D[0].MD.push({\n            Id: 7200, // battery\n            Val: Math.round((disposable_mv / 1000) * 1000) / 1000 // V\n        });\n    }\n\n    addRadioMeta(result, msg);\n\n    global.set(\"mid\", mid + 1);\n    msg.payload = result;\n    return [null, msg];\n}\n\n// ======================\nreturn [null, null];\n",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 750,
+        "y": 720,
+        "wires": [
+            [],
+            []
+        ]
+    },
+    {
+        "id": "67cd0296de1c1a4e",
+        "type": "comment",
+        "z": "2ae47dcf5e37c95c",
+        "name": "Voer Vlegel ASSET ID in",
+        "info": "Het gaat hier over:\nconst Dev = \"ASSET_ID_START_MET_36\";",
+        "x": 690,
+        "y": 640,
+        "wires": []
+    },
+    {
+        "id": "b6fcda7b72b59460",
+        "type": "comment",
+        "z": "2ae47dcf5e37c95c",
+        "name": "Controleer pulse waarde omvorming ",
+        "info": "Het gaat hier over:\nconst PulseConversionValue = 1;",
+        "x": 720,
+        "y": 680,
+        "wires": []
+    }
+]

@@ -1,0 +1,37 @@
+{
+  "api": [
+    { "label": "Temperatuur",        "value": "[TEMP]"  },
+    { "label": "Warmtepomp",         "value": "[WP]"    },
+    { "label": "Koeling",            "value": "[COOL]"  },
+    { "label": "Verwarming",         "value": "[HEAT]"  },
+    { "label": "Ventilatie",         "value": "[VENT]"  },
+    { "label": "Elektriciteit",      "value": "[ELEC]"  },
+    { "label": "Gas",                "value": "[GAS]"   },
+    { "label": "Water",              "value": "[WATER]" },
+    { "label": "Zonne-energie",      "value": "[PV]"    },
+    { "label": "Gateway",            "value": "[GW]"    }
+  ],
+  "delhaize": [
+    "COOLING", "GRID", "HVAC", "HEATING", "VARIA",
+    "WATER", "GAS", "SOLAR", "ENVIRONMENT", "MISCELLANEOUS"
+  ],
+  "enerseeCategories": [
+    "Heating", "Ventilation", "Cooling", "Product cooling",
+    "HVAC", "Interior lighting", "Exterior lighting",
+    "Office equipment", "Kitchen equipment", "Other plug loads",
+    "Domestic hot water", "Elevators", "Escalators",
+    "Solar", "Wind", "Self consumption Solar", "Self consumption Wind",
+    "Servers", "EV", "Battery", "Total consumption",
+    "Grid", "Mixed", "Miscellaneous", "Injection", "CHP", "Non_Consumption"
+  ],
+  "enerseeNames": [
+    "Radiance", "Temp_OUT", "Environment (Humidity)",
+    "Environment (Carbondioxide absolute)", "P_atm",
+    "Environment (Temperature)", "Elec_Main", "Elec_Inject.",
+    "Elec_Offtake", "Gas_Offtake", "Elec_Inject._SM", "Elec_Offtake_SM",
+    "Gas_Offtake_SM", "Cooling_Combined", "Cooling_Prod.", "Cooling_Distr.",
+    "Heat_Recup", "Solar_Prod.", "HVAC_Combined", "HeatPump_Elec",
+    "HeatPump_Heat", "Vent.", "Water_Offtake", "EV", "Oven",
+    "SWW", "Lighting", "Varia"
+  ]
+}

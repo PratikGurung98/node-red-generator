@@ -1,0 +1,338 @@
+[
+    {
+        "id": "7b36a59e37ebd47e",
+        "type": "group",
+        "z": "c0dcfcea1760ff7e",
+        "name": "E_630ML4_WAVE_TCP_V6 METERNAAM",
+        "style": {
+            "label": true,
+            "fill": "#5caa7e",
+            "color": "#ffffff"
+        },
+        "nodes": [
+            "725c5e377fab83f5",
+            "dfbac8c73cb5b4b9",
+            "f84cba56d4722208",
+            "ba9199f6aded3baf",
+            "c32fabab26140c06",
+            "9917401c1ff3603f",
+            "54b8f4f7e3f593ac",
+            "a2a6564f5acfeea5",
+            "787bf2cdeee0bc82",
+            "fa6c7afa60d9a934",
+            "285fd3e0e317be8b",
+            "d75a56668bd53de9",
+            "1bb6709db3afb0b5",
+            "7d9a65a09fa685c0",
+            "341e82515cc64af7"
+        ],
+        "x": 14,
+        "y": 279,
+        "w": 1372,
+        "h": 222
+    },
+    {
+        "id": "725c5e377fab83f5",
+        "type": "modbus-getter",
+        "z": "c0dcfcea1760ff7e",
+        "g": "7b36a59e37ebd47e",
+        "name": "Read",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "unitid": "31",
+        "dataType": "InputRegister",
+        "adr": "0",
+        "quantity": "80",
+        "server": "5cb0a4a05fd9f4f7",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": false,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 310,
+        "y": 460,
+        "wires": [
+            [
+                "787bf2cdeee0bc82"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "dfbac8c73cb5b4b9",
+        "type": "function",
+        "z": "c0dcfcea1760ff7e",
+        "g": "7b36a59e37ebd47e",
+        "name": "Parse SDM630MCT-ML4",
+        "func": "const buffer = new ArrayBuffer(4);\nconst intView = new Uint32Array(buffer);\nconst floatView = new Float32Array(buffer);\nvar combined = 0;\nvar data = {};\n\nfunction readFloat(hi, lo) {\n  intView[0] = (hi << 16) | lo;\n  return floatView[0].toFixed(3);\n}\n\n// U1 - reg 0\ndata[\"U1\"]    = readFloat(msg.payload[0],  msg.payload[1]);\n// U2 - reg 2\ndata[\"U2\"]    = readFloat(msg.payload[2],  msg.payload[3]);\n// U3 - reg 4\ndata[\"U3\"]    = readFloat(msg.payload[4],  msg.payload[5]);\n// I1 - reg 6\ndata[\"I1\"]    = readFloat(msg.payload[6],  msg.payload[7]);\n// I2 - reg 8\ndata[\"I2\"]    = readFloat(msg.payload[8],  msg.payload[9]);\n// I3 - reg 10\ndata[\"I3\"]    = readFloat(msg.payload[10], msg.payload[11]);\n// P1 - reg 12\ndata[\"P1\"]    = readFloat(msg.payload[12], msg.payload[13]);\n// P2 - reg 14\ndata[\"P2\"]    = readFloat(msg.payload[14], msg.payload[15]);\n// P3 - reg 16\ndata[\"P3\"]    = readFloat(msg.payload[16], msg.payload[17]);\n// S1 - reg 18\ndata[\"S1\"]    = readFloat(msg.payload[18], msg.payload[19]);\n// S2 - reg 20\ndata[\"S2\"]    = readFloat(msg.payload[20], msg.payload[21]);\n// S3 - reg 22\ndata[\"S3\"]    = readFloat(msg.payload[22], msg.payload[23]);\n// Q1 - reg 24\ndata[\"Q1\"]    = readFloat(msg.payload[24], msg.payload[25]);\n// Q2 - reg 26\ndata[\"Q2\"]    = readFloat(msg.payload[26], msg.payload[27]);\n// Q3 - reg 28\ndata[\"Q3\"]    = readFloat(msg.payload[28], msg.payload[29]);\n// PF1 - reg 30  ← was foutief data[\"Q1\"]\ndata[\"PF1\"]   = readFloat(msg.payload[30], msg.payload[31]);\n// PF2 - reg 32  ← was foutief data[\"Q2\"]\ndata[\"PF2\"]   = readFloat(msg.payload[32], msg.payload[33]);\n// PF3 - reg 34  ← was foutief data[\"Q3\"]\ndata[\"PF3\"]   = readFloat(msg.payload[34], msg.payload[35]);\n// PT  - reg 52\ndata[\"PT\"]    = readFloat(msg.payload[52], msg.payload[53]);\n// QT  - reg 60\ndata[\"QT\"]    = readFloat(msg.payload[60], msg.payload[61]);\n// PFT - reg 62\ndata[\"PFT\"]   = readFloat(msg.payload[62], msg.payload[63]);\n// PimpT - reg 72\ndata[\"PimpT\"] = readFloat(msg.payload[72], msg.payload[73]);\n// PexpT - reg 74\ndata[\"PexpT\"] = readFloat(msg.payload[74], msg.payload[75]);\n// QimpT - reg 76\ndata[\"QimpT\"] = readFloat(msg.payload[76], msg.payload[77]);\n// QexpT - reg 78\ndata[\"QexpT\"] = readFloat(msg.payload[78], msg.payload[79]);\n\nvar nmsg = {};\nnmsg.topic = 'telemetry';\nnmsg.payload = data;\nreturn nmsg;\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 650,
+        "y": 460,
+        "wires": [
+            [
+                "f84cba56d4722208"
+            ]
+        ]
+    },
+    {
+        "id": "f84cba56d4722208",
+        "type": "json",
+        "z": "c0dcfcea1760ff7e",
+        "g": "7b36a59e37ebd47e",
+        "name": "Conv",
+        "property": "payload",
+        "action": "obj",
+        "pretty": false,
+        "x": 830,
+        "y": 460,
+        "wires": [
+            [
+                "ba9199f6aded3baf"
+            ]
+        ]
+    },
+    {
+        "id": "ba9199f6aded3baf",
+        "type": "function",
+        "z": "c0dcfcea1760ff7e",
+        "g": "7b36a59e37ebd47e",
+        "name": "E_630ML4_WAVE_TCP_V6",
+        "func": "let mid = global.get(\"mid\") || 0;\n\nconst Dev = \"ASSET\"; // <-- jouw asset ID\n\nconst idMapping = {\n    \"U1\":    3000,\n    \"U2\":    3100,\n    \"U3\":    3200,\n    \"I1\":    3300,\n    \"I2\":    3400,\n    \"I3\":    3500,\n    \"P1\":    3600,\n    \"P2\":    3700,\n    \"P3\":    3800,\n    \"S1\":    3850,\n    \"S2\":    3860,\n    \"S3\":    3870,\n    \"Q1\":    3900,\n    \"Q2\":    4000,\n    \"Q3\":    4100,\n    \"PF1\":   4150,\n    \"PF2\":   4160,\n    \"PF3\":   4170,\n    \"PT\":    4200,\n    \"QT\":    4300,\n    \"PFT\":   4400,\n    \"PexpT\": 4500,\n    \"PimpT\": 4600,\n    \"QimpT\": 4700,\n    \"QexpT\": 4800\n};\n\nconst mappingLower = {};\nObject.keys(idMapping).forEach(k => mappingLower[k.toLowerCase()] = idMapping[k]);\n\nlet result = {\n    MID: mid,\n    D: [{\n        Dev: Dev,\n        ED: [],\n        MD: []\n    }]\n};\n\nconst payloadData = msg.payload || {};\n\nfor (let key in payloadData) {\n    if (!payloadData.hasOwnProperty(key)) continue;\n\n    let id = idMapping[key];\n    if (typeof id === \"undefined\") {\n        id = mappingLower[key.toLowerCase()];\n    }\n\n    if (typeof id !== \"undefined\") {\n        let rawVal = payloadData[key];\n        if (rawVal === null || typeof rawVal === \"object\") {\n            node.warn(`Overslaan ${key}: waarde is geen primitief`);\n            continue;\n        }\n        let num = parseFloat(String(rawVal).trim().replace(\",\", \".\"));\n        if (!Number.isFinite(num)) {\n            node.warn(`Ongeldige waarde voor ${key}: \"${rawVal}\" — overslaan`);\n            continue;\n        }\n        result.D[0].MD.push({ Id: id, Val: num });\n    } else {\n        node.debug(`Key niet in mapping: ${key}`);\n    }\n}\n\nresult.D[0].TS = new Date().toISOString();\n\nif (result.D[0].MD.length > 0) {\n    global.set(\"mid\", mid + 1);\n}\n\nmsg.payload = result;\nmsg.queque = \"success\";\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1020,
+        "y": 460,
+        "wires": [
+            [
+                "341e82515cc64af7",
+                "7d9a65a09fa685c0"
+            ]
+        ]
+    },
+    {
+        "id": "c32fabab26140c06",
+        "type": "inject",
+        "z": "c0dcfcea1760ff7e",
+        "g": "7b36a59e37ebd47e",
+        "name": "15min trigger",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "900",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "5",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 140,
+        "y": 460,
+        "wires": [
+            [
+                "725c5e377fab83f5"
+            ]
+        ]
+    },
+    {
+        "id": "9917401c1ff3603f",
+        "type": "comment",
+        "z": "c0dcfcea1760ff7e",
+        "g": "7b36a59e37ebd47e",
+        "name": "Stel trigger offset in",
+        "info": "inject once after (modbus_address) seconds, then every 15 min",
+        "x": 150,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "54b8f4f7e3f593ac",
+        "type": "comment",
+        "z": "c0dcfcea1760ff7e",
+        "g": "7b36a59e37ebd47e",
+        "name": "Set modbus address",
+        "info": "Unit-Id is modbus address",
+        "x": 350,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "a2a6564f5acfeea5",
+        "type": "comment",
+        "z": "c0dcfcea1760ff7e",
+        "g": "7b36a59e37ebd47e",
+        "name": "Voer vlegel DEV in",
+        "info": "const Dev = \"ASSET\";",
+        "x": 990,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "787bf2cdeee0bc82",
+        "type": "function",
+        "z": "c0dcfcea1760ff7e",
+        "g": "7b36a59e37ebd47e",
+        "name": "catch error",
+        "func": "if (msg.error) {\n  msg.failReason = msg.error;\n  return [null, msg];\n}\n\nif (!Array.isArray(msg.payload)) {\n  msg.failReason = `payload_not_array (${typeof msg.payload})`;\n  return [null, msg];\n}\n\nif (msg.payload.length !== 80) {\n  msg.failReason = `bad_length (${msg.payload.length})`;\n  return [null, msg];\n}\n\nif (msg.payload.every(v => v === 0)) {\n  msg.failReason = \"all_zero_payload\";\n  return [null, msg];\n}\n\nreturn [msg, null];\n",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 450,
+        "y": 460,
+        "wires": [
+            [
+                "dfbac8c73cb5b4b9"
+            ],
+            [
+                "fa6c7afa60d9a934"
+            ]
+        ]
+    },
+    {
+        "id": "fa6c7afa60d9a934",
+        "type": "function",
+        "z": "c0dcfcea1760ff7e",
+        "g": "7b36a59e37ebd47e",
+        "name": "error handling",
+        "func": "let mid = global.get(\"mid\") || 0;\n\nconst Dev = \"ASSET\"; // <-- zelfde asset ID\nconst MODBUS_FAIL_EVENT_ID = 7199;\n\nlet reason = msg.failReason || msg.error || \"MODBUS_FAIL\";\n\nconst unitId = msg.unitId ?? msg.queueUnitId ?? undefined;\nconst qLen = msg.queueLengthByUnitId?.queueLength ?? msg.queueLength ?? undefined;\n\nlet details = [];\nif (unitId !== undefined) details.push(`unitId=${unitId}`);\nif (qLen  !== undefined) details.push(`queueLen=${qLen}`);\nif (msg.topic)     details.push(`topic=${msg.topic}`);\nif (msg.messageId) details.push(`messageId=${msg.messageId}`);\n\nlet val = String(reason);\nif (details.length) val += ` | ${details.join(\", \")}`;\n\nconst result = {\n  MID: mid,\n  D: [{\n    Dev: Dev,\n    TS: new Date().toISOString(),\n    ED: [{ Id: MODBUS_FAIL_EVENT_ID, Val: val, Sev: 2 }],\n    MD: []\n  }]\n};\n\nglobal.set(\"mid\", mid + 1);\n\nmsg.payload = result;\nmsg.queque  = \"fail\";\nmsg.topic   = \"telemetry\";\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 980,
+        "y": 420,
+        "wires": [
+            [
+                "341e82515cc64af7",
+                "7d9a65a09fa685c0"
+            ]
+        ]
+    },
+    {
+        "id": "285fd3e0e317be8b",
+        "type": "comment",
+        "z": "c0dcfcea1760ff7e",
+        "g": "7b36a59e37ebd47e",
+        "name": "LEES DIT VOOR INFO OVER OUTPUTS/INPUTS",
+        "info": "VOOR MODBUS READ node\nverbind deze input met oftewel\nvorige \"go2Next || retry\" node of met \nallereerste trigger\n\nVOOR go2Next || retry\nverbind output 2 met de read node van \nde volgende modbus read en \noutput 3 zou verbonden moeten zijn met link out iothub\n\nVOOR error handling && E_630ML1_WAVE_TCP_V1\ndeze zijn verbonden met de link out voor iothub\n(deze zouden allebei reeds verbonden\nmoeten zijn met input van retry node)",
+        "x": 650,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "d75a56668bd53de9",
+        "type": "comment",
+        "z": "c0dcfcea1760ff7e",
+        "g": "7b36a59e37ebd47e",
+        "name": "LINK2IOTHUB",
+        "info": "",
+        "x": 1280,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "1bb6709db3afb0b5",
+        "type": "comment",
+        "z": "c0dcfcea1760ff7e",
+        "g": "7b36a59e37ebd47e",
+        "name": "Voer vlegel DEV in",
+        "info": "const Dev = \"ASSET\";",
+        "x": 1230,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "7d9a65a09fa685c0",
+        "type": "link out",
+        "z": "c0dcfcea1760ff7e",
+        "g": "7b36a59e37ebd47e",
+        "name": "LINK2IOTHUB",
+        "mode": "link",
+        "links": [],
+        "x": 1345,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "341e82515cc64af7",
+        "type": "function",
+        "z": "c0dcfcea1760ff7e",
+        "g": "7b36a59e37ebd47e",
+        "name": "go2Next || retry",
+        "func": "const DELAY_MS = 5000;\nconst MAX_RETRY = 6;\n\nconst Dev = \"ASSET\";\nconst RETRY_WARN_EVENT_ID = 7198;\n\nlet q = (msg.queque || \"\").toLowerCase();\nlet retry = global.get(\"retry\") || 0;\n\nfunction sendLater(out1, out2, out3) {\n  setTimeout(() => node.send([out1, out2, out3]), DELAY_MS);\n}\n\nif (q === \"fail\") {\n  retry += 1;\n  global.set(\"retry\", retry);\n\n  if (retry < MAX_RETRY) {\n    sendLater({ ...msg, action: \"go\", retry }, null, null);\n    return;\n  }\n\n  global.set(\"retry\", 0);\n  sendLater(null, { ...msg, action: \"stop\", retry: MAX_RETRY }, null);\n  return;\n}\n\nif (q === \"success\") {\n  const retriesUsed = retry;\n\n  if (retriesUsed <= 1) {\n    global.set(\"retry\", 0);\n    sendLater(null, { ...msg, action: \"ok\", retry: 0 }, null);\n    return;\n  }\n\n  global.set(\"retry\", 0);\n\n  const m2 = { ...msg, action: \"ok_but_retried\", info: `success but retried ${retriesUsed} times`, retriesUsed, retry: 0 };\n\n  const mid = global.get(\"mid\") || 0;\n  global.set(\"mid\", mid + 1);\n\n  const m3 = {\n    topic: \"telemetry\",\n    queque: \"event\",\n    payload: {\n      MID: mid,\n      D: [{\n        Dev,\n        TS: new Date().toISOString(),\n        ED: [{ Id: RETRY_WARN_EVENT_ID, Val: `success but retried ${retriesUsed} times`, Sev: 2 }],\n        MD: []\n      }]\n    }\n  };\n\n  sendLater(null, m2, m3);\n  return;\n}\n\nsendLater(null, { ...msg, action: \"unknown_queque\", retry }, null);\n",
+        "outputs": 3,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1220,
+        "y": 420,
+        "wires": [
+            [
+                "725c5e377fab83f5"
+            ],
+            [],
+            [
+                "7d9a65a09fa685c0"
+            ]
+        ]
+    },
+    {
+        "id": "5cb0a4a05fd9f4f7",
+        "type": "modbus-client",
+        "name": "waveshare",
+        "clienttype": "tcp",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": true,
+        "tcpHost": "192.168.31.40",
+        "tcpPort": "502",
+        "tcpType": "TCP-RTU-BUFFERED",
+        "serialPort": "/dev/ttyUSB",
+        "serialType": "RTU-BUFFERD",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "0x3A",
+        "unit_id": 1,
+        "commandDelay": 1,
+        "clientTimeout": 5000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 5000,
+        "parallelUnitIdsAllowed": true,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "c644f36f76694d5d",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-contrib-modbus": "5.45.2"
+        }
+    }
+]

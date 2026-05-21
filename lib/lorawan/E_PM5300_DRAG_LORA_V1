@@ -1,0 +1,30 @@
+[
+    {
+        "id": "8bd4ce6718d834a5",
+        "type": "function",
+        "z": "a9cf84f103bcc4d0",
+        "name": "E_PM5300_DRAG_LORA_V1 - {meetpunt naam}",
+        "func": "// --- Node-RED Function node: Decode & map Dragino uplink (PM5300) ---\n\nconst Dev = \"ASSET_ID_START_MET_36\";\n\n// 1) Definitie van je kanalen en mapping (reg = (register-1) in hex, puur ter referentie)\nvar channels = [\n    { prop: \"total_system_power_W\", reg: 0x0BF3, id: 4200 }, // reg 3060 (kW)\n    { prop: \"total_system_var_VAr\", reg: 0x0BFB, id: 4300 }, // reg 3068 (kVAR)\n    { prop: \"total_export_kWh\", reg: 0x0A8D, id: 4500 }, // reg 2702 (kWh) received/out of load\n    { prop: \"total_import_kWh\", reg: 0x0A8B, id: 4600 }, // reg 2700 (kWh) delivered/into load\n    { prop: \"total_export_kVArh\", reg: 0x0A95, id: 4700 }, // reg 2710 (kVARh) received\n    { prop: \"total_import_kVArh\", reg: 0x0A93, id: 4800 }, // reg 2708 (kVARh) delivered\n    { prop: \"total_system_power_factor\", reg: 0x0C0B, id: 4400 }, // reg 3084 (4Q FP PF)\n];\n\n// PM5300 levert kW/kVAR/kWh/kVARh al \"proper\" aan.\n// Jij zei: DB is kW enz, maar propnaam heeft _W: dus NIET schalen.\nvar scaleBy1000 = []; // leeg\n\n// 2) Decode Base64-payload naar Buffer\nvar buf = (typeof msg.payload === \"string\")\n    ? Buffer.from(msg.payload, \"base64\")\n    : msg.payload;\n\nif (!Buffer.isBuffer(buf) || buf.length < 7) {\n    node.error(\"Invalid payload\", msg);\n    return null;\n}\n\n// 3) Lees header en bepaal offset\nvar HEADER_LEN = 3;\nvar dataLen = buf.length - HEADER_LEN;\nvar floatCount = Math.floor(dataLen / 4);\n\n// 4) Helper om een Big-Endian float32 te lezen en afronden\nfunction readF(off) {\n    if (off + 4 > buf.length) { return null; }\n    var v = buf.readFloatBE(off);\n    if (isNaN(v)) { return null; }\n    return v;\n}\n\n// 4Q FP PF decode (Schneider PM53xx)\nfunction decode4QPowerFactor(regVal) {\n    if (regVal == null || isNaN(regVal)) return null;\n\n    // Mapping vanuit Schneider \"4Q FP PF\"\n    if (regVal > 1) return 2 - regVal;     // quadrant 4\n    if (regVal < -1) return -2 - regVal;    // quadrant 2\n    return regVal;                           // quadrant 1 & 3 + unity\n}\n\n// 5) Decode battery (bytes 0–1) en alle float-slots\nvar measurements = {\n    battery: (((buf[0] << 8) | buf[1]) & 0x7fff) / 1000\n};\n\nfor (var i = 0; i < floatCount && i < channels.length; i++) {\n    var off = HEADER_LEN + i * 4;\n    measurements[channels[i].prop] = readF(off);\n}\n\n// PF fix toepassen\nif (measurements.total_system_power_factor != null) {\n    measurements.total_system_power_factor = decode4QPowerFactor(measurements.total_system_power_factor);\n}\n\n// afronden (na PF decode)\nObject.keys(measurements).forEach(function (k) {\n    if (typeof measurements[k] === \"number\") {\n        measurements[k] = Math.round(measurements[k] * 100) / 100;\n    }\n});\n\n// 6) Bouw de standaardstructuur\nvar mid = global.get(\"mid\") || 0;\n\nvar result = {\n    MID: mid,\n    D: [{\n        Dev: Dev,\n        TS: msg.time ? new Date(msg.time).toISOString() : undefined,\n        ED: [],\n        MD: []\n    }]\n};\n\n// 7) Vul MD uit je kanaaltabel en het measurements-object\nchannels.forEach(function (ch) {\n    var val = measurements[ch.prop];\n    if (val != null) {\n        // opschalen indien nodig (hier leeg gelaten)\n        if (scaleBy1000.indexOf(ch.id) !== -1) {\n            val = Math.round((val / 1000) * 1000) / 1000;\n        }\n        result.D[0].MD.push({ Id: ch.id, Val: val });\n    }\n});\n\n// batterij\nresult.D[0].MD.push({ Id: 7200, Val: measurements.battery });\n\n// 8) Optioneel: snr, rssi\n[[\"snr\", 5400], [\"rssi\", 5500]].forEach(function (item) {\n    var key = item[0], id = item[1];\n    if (msg[key] !== undefined) {\n        result.D[0].MD.push({ Id: id, Val: parseFloat(msg[key]) });\n    }\n});\n\n// spreadFactor uit msg.dr\nif (msg.dr && msg.dr.spreadFactor !== undefined) {\n    result.D[0].MD.push({ Id: 5200, Val: parseFloat(msg.dr.spreadFactor) });\n}\n\n// 9) Increment MID en return\nglobal.set(\"mid\", mid + 1);\nmsg.payload = result;\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 430,
+        "y": 460,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "0ff80b5a9f0db7a1",
+        "type": "comment",
+        "z": "a9cf84f103bcc4d0",
+        "name": "Voer Vlegel ASSET ID in",
+        "info": "Het gaat hier over:\nconst Dev = \"ASSET_ID_START_MET_36\";",
+        "x": 350,
+        "y": 420,
+        "wires": []
+    }
+]

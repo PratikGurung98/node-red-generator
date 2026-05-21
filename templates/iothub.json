@@ -1,0 +1,290 @@
+[
+  {
+    "id": "ccf3703c88c2b23d",
+    "type": "link in",
+    "name": "link in 1",
+    "links": [],
+    "x": 75,
+    "y": 120,
+    "wires": [
+      [
+        "d4c2a5cc014fc69e"
+      ]
+    ]
+  },
+  {
+    "id": "7991d84695441017",
+    "type": "mqtt out",
+    "name": "BOXNAME Azure IoTHub",
+    "topic": "devices/BOXNAME/messages/events/",
+    "qos": "1",
+    "retain": "false",
+    "respTopic": "",
+    "contentType": "",
+    "userProps": "",
+    "correl": "",
+    "expiry": "",
+    "broker": "662927873fef6531",
+    "x": 530,
+    "y": 100,
+    "wires": []
+  },
+  {
+    "id": "84261f0c182e86fe",
+    "type": "function",
+    "name": "Set global MID",
+    "func": "try {\n    global.set(\"mid\", 0);\n    node.status({ fill: \"green\", shape: \"dot\", text: \"MID set\" });\n} catch (error) {\n    node.error(\"Failed to set MID: \" + error.message, error);\n    node.status({ fill: \"red\", shape: \"ring\", text: \"Failed to set MID\" });\n}\n",
+    "outputs": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 280,
+    "y": 260,
+    "wires": []
+  },
+  {
+    "id": "f30b195bd95a5de8",
+    "type": "inject",
+    "name": "On Start",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": true,
+    "onceDelay": "1",
+    "topic": "",
+    "payload": "{}",
+    "payloadType": "json",
+    "x": 120,
+    "y": 260,
+    "wires": [
+      [
+        "84261f0c182e86fe"
+      ]
+    ]
+  },
+  {
+    "id": "d4c2a5cc014fc69e",
+    "type": "function",
+    "name": "DATABACKUP",
+    "func": "// === CONFIG ===\nconst MAX_BUFFER_MS = 24 * 60 * 60 * 1000; // 24u\nconst EVENT_ID = 9800;\nconst EVENT_SEV = 2;\nconst GATEWAY_DEV = \"GATEWAY_ASSET_ID\";\n\nconst buffering = global.get(\"Buffering\") === true;\nconst prevBuffering = global.get(\"BufferingPrev\") === true;\nconst bufferStartIso = global.get(\"BufferStart\");\n\nfunction getStartMs() {\n    if (!bufferStartIso) return null;\n    const t = new Date(bufferStartIso).getTime();\n    return Number.isFinite(t) ? t : null;\n}\n\nfunction makeGatewayEvent(text) {\n    const nowIso = new Date().toISOString();\n    let mid = global.get(\"mid\") || 0;\n    global.set(\"mid\", mid + 1);\n    return { MID: mid, D: [{ Dev: GATEWAY_DEV, TS: nowIso, ED: [{ Id: EVENT_ID, Val: text, Sev: EVENT_SEV }], MD: [] }] };\n}\n\nfunction formatDuration(ms) {\n    const s = Math.max(0, Math.floor(ms / 1000));\n    const hh = Math.floor(s / 3600);\n    const mm = Math.floor((s % 3600) / 60);\n    const ss = s % 60;\n    return `${hh}h ${mm}m ${ss}s`;\n}\n\nif (buffering && !prevBuffering) {\n    const nowIso = new Date().toISOString();\n    global.set(\"BufferStart\", nowIso);\n    global.set(\"BufferOverflow\", false);\n    global.set(\"BufferOverflowNotified\", false);\n    let backup = global.get(\"BackupData\");\n    if (!Array.isArray(backup)) backup = [];\n    backup.unshift(makeGatewayEvent(`Buffering started on: ${nowIso}`));\n    global.set(\"BackupData\", backup);\n}\n\nif (!buffering && prevBuffering) {\n    let backup = global.get(\"BackupData\");\n    if (!Array.isArray(backup)) backup = [];\n    if (backup.length > 0) {\n        const nowIso = new Date().toISOString();\n        const startMs = getStartMs();\n        const downMs = (startMs !== null) ? (Date.now() - startMs) : null;\n        const downTxt = (downMs !== null) ? ` (downtime: ${formatDuration(downMs)})` : \"\";\n        backup.push(makeGatewayEvent(`Buffering stopped and reconnected on: ${nowIso}${downTxt}`));\n        const out2 = { payload: backup, topic: \"BackupFlush\", flushTs: nowIso };\n        global.set(\"BackupData\", []);\n        global.set(\"BufferOverflow\", false);\n        global.set(\"BufferOverflowNotified\", false);\n        global.set(\"BufferStart\", null);\n        node.status({ fill: \"green\", shape: \"dot\", text: `Flushed ${backup.length} items` });\n        global.set(\"BufferingPrev\", buffering);\n        return [msg, out2];\n    } else {\n        node.status({ fill: \"green\", shape: \"dot\", text: \"No backup to flush\" });\n    }\n}\n\nif (buffering) {\n    let startMs = getStartMs();\n    if (startMs === null) {\n        const nowIso = new Date().toISOString();\n        global.set(\"BufferStart\", nowIso);\n        startMs = Date.now();\n        global.set(\"BufferOverflow\", false);\n        global.set(\"BufferOverflowNotified\", false);\n    }\n    const elapsed = Date.now() - startMs;\n    if (elapsed > MAX_BUFFER_MS) {\n        global.set(\"BufferOverflow\", true);\n        const overflowNotified = global.get(\"BufferOverflowNotified\") === true;\n        if (!overflowNotified) {\n            const nowIso = new Date().toISOString();\n            let backup = global.get(\"BackupData\");\n            if (!Array.isArray(backup)) backup = [];\n            backup.push(makeGatewayEvent(`Buffering stopped because time exceeded: ${nowIso}`));\n            global.set(\"BackupData\", backup);\n            global.set(\"BufferOverflowNotified\", true);\n            node.status({ fill: \"red\", shape: \"ring\", text: `BUFFER >24h - capture STOPPED` });\n        } else {\n            node.status({ fill: \"red\", shape: \"ring\", text: \"BUFFER >24h - capture STOPPED\" });\n        }\n        global.set(\"BufferingPrev\", buffering);\n        return [msg, null];\n    }\n    let backup = global.get(\"BackupData\");\n    if (!Array.isArray(backup)) backup = [];\n    backup.push(msg.payload);\n    global.set(\"BackupData\", backup);\n    const mins = Math.floor(elapsed / 60000);\n    node.status({ fill: \"yellow\", shape: \"dot\", text: `Buffering: ${backup.length} items (${mins}m)` });\n    global.set(\"BufferingPrev\", buffering);\n    return [msg, null];\n}\n\nnode.status({ fill: \"green\", shape: \"dot\", text: \"Realtime\" });\nglobal.set(\"BufferingPrev\", buffering);\nreturn [msg, null];",
+    "outputs": 2,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 240,
+    "y": 120,
+    "wires": [
+      [
+        "8f62c34bd6c7e703",
+        "7991d84695441017"
+      ],
+      [
+        "ee7858ae3db9e074"
+      ]
+    ]
+  },
+  {
+    "id": "ee7858ae3db9e074",
+    "type": "split",
+    "name": "",
+    "splt": "\\n",
+    "spltType": "str",
+    "arraySplt": 1,
+    "arraySpltType": "len",
+    "stream": false,
+    "addname": "",
+    "x": 450,
+    "y": 160,
+    "wires": [
+      [
+        "d35d64ee90c4c108"
+      ]
+    ]
+  },
+  {
+    "id": "d35d64ee90c4c108",
+    "type": "delay",
+    "name": "",
+    "pauseType": "delay",
+    "timeout": "100",
+    "timeoutUnits": "milliseconds",
+    "rate": "1",
+    "nbRateUnits": "1",
+    "rateUnits": "second",
+    "randomFirst": "1",
+    "randomLast": "5",
+    "randomUnits": "seconds",
+    "drop": false,
+    "allowrate": false,
+    "outputs": 1,
+    "x": 590,
+    "y": 160,
+    "wires": [
+      [
+        "7991d84695441017"
+      ]
+    ]
+  },
+  {
+    "id": "8f62c34bd6c7e703",
+    "type": "persistent-global-context",
+    "x": 510,
+    "y": 60,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "38855658f0cf197a",
+    "type": "status",
+    "name": "",
+    "scope": [
+      "7991d84695441017"
+    ],
+    "x": 460,
+    "y": 200,
+    "wires": [
+      [
+        "d785c7f265167407"
+      ]
+    ]
+  },
+  {
+    "id": "d785c7f265167407",
+    "type": "function",
+    "name": "mqtt status",
+    "func": "if (msg.status && msg.status.fill) {\n    let currentBuffering = global.get(\"Buffering\") || false;\n    let newBuffering = currentBuffering;\n    if (msg.status.fill === \"green\") { newBuffering = false; }\n    else if (msg.status.fill === \"yellow\" || msg.status.fill === \"red\") { newBuffering = true; }\n    if (newBuffering !== currentBuffering) {\n        global.set(\"Buffering\", newBuffering);\n        if (newBuffering === true) {\n            let now = new Date().toISOString();\n            global.set(\"BufferStart\", now);\n            node.status({ fill: \"yellow\", shape: \"ring\", text: \"Buffering ON\" });\n        } else {\n            global.set(\"BufferStart\", null);\n            node.status({ fill: \"green\", shape: \"dot\", text: \"Buffering OFF\" });\n        }\n    }\n}\nreturn null;\n",
+    "outputs": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 610,
+    "y": 200,
+    "wires": []
+  },
+  {
+    "id": "3c0ffb9fc0425e16",
+    "type": "comment",
+    "name": "⚠️  UPDATE SAS TOKEN na import → mqtt broker config",
+    "info": "az iot hub generate-sas-token --hub-name DelhaizeIotHub.azure-devices.net --device-id BOXNAME --duration 1576800000",
+    "x": 830,
+    "y": 100,
+    "wires": []
+  },
+  {
+    "id": "nr_start_inject",
+    "type": "inject",
+    "name": "",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": true,
+    "onceDelay": "60",
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "x": 120,
+    "y": 340,
+    "wires": [
+      [
+        "nr_start_func"
+      ]
+    ]
+  },
+  {
+    "id": "nr_start_func",
+    "type": "function",
+    "name": "node-redSTART",
+    "func": "let mid = global.get(\"mid\") || 0;\n\nconst Dev = \"GATEWAY_ASSET_ID\";\n\nconst nowIso = new Date().toISOString();\n\nmsg.payload = {\n    MID: mid,\n    D: [{\n        Dev: Dev,\n        TS: nowIso,\n        ED: [{\n            Id: 9800,\n            Val: `Node-RED deployed op: ${nowIso}`,\n            Sev: 2\n        }],\n        MD: []\n    }]\n};\n\nglobal.set(\"mid\", mid + 1);\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 320,
+    "y": 340,
+    "wires": [
+      [
+        "ccf3703c88c2b23d"
+      ]
+    ]
+  },
+  {
+    "id": "nr_start_comment",
+    "type": "comment",
+    "name": "GATEWAY-ASSET_ID",
+    "info": "",
+    "x": 330,
+    "y": 300,
+    "wires": []
+  },
+  {
+    "id": "662927873fef6531",
+    "type": "mqtt-broker",
+    "name": "BOXNAME Azure IoTHub",
+    "broker": "ssl://DelhaizeIotHub.azure-devices.net",
+    "port": "8883",
+    "tls": "11cafda50471f251",
+    "clientid": "BOXNAME",
+    "autoConnect": true,
+    "usetls": true,
+    "protocolVersion": "4",
+    "keepalive": "60",
+    "cleansession": true,
+    "birthTopic": "",
+    "birthQos": "0",
+    "birthRetain": "false",
+    "birthPayload": "",
+    "birthMsg": {},
+    "closeTopic": "",
+    "closeQos": "0",
+    "closeRetain": "false",
+    "closePayload": "",
+    "closeMsg": {},
+    "willTopic": "",
+    "willQos": "0",
+    "willRetain": "false",
+    "willPayload": "",
+    "willMsg": {},
+    "userProps": "",
+    "sessionExpiry": ""
+  },
+  {
+    "id": "11cafda50471f251",
+    "type": "tls-config",
+    "name": "",
+    "cert": "",
+    "key": "",
+    "ca": "",
+    "certname": "",
+    "keyname": "",
+    "caname": "",
+    "servername": "",
+    "verifyservercert": true,
+    "alpnprotocol": ""
+  },
+  {
+    "id": "gatewayasset_comment",
+    "type": "comment",
+    "name": "GATEWAYASSET",
+    "info": "",
+    "x": 250,
+    "y": 80,
+    "wires": []
+  }
+]
