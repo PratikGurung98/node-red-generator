@@ -1,5 +1,5 @@
 # AI Acceleration Labs — Node-RED Generator
-## Workfile voor Claude
+
 
 ---
 
