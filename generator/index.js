@@ -20,7 +20,7 @@ function loadLib(dir, name) {
   for (const ext of ['.json', '.js', '']) {
     const p = path.join(LIB, dir, name + ext);
     if (!fs.existsSync(p)) continue;
-    if (ext === '.js') return require(p);           // module.exports = [...]
+    if (ext === '.js') return JSON.parse(fs.readFileSync(p, 'utf8')); // Node-RED flow JSON
     return JSON.parse(fs.readFileSync(p, 'utf8'));  // raw JSON
   }
   throw new Error(`Template niet gevonden: ${dir}/${name}`);
@@ -65,8 +65,14 @@ function remapIds(nodes) {
 /** Replace {meetpunt naam} placeholder in node names. */
 function replaceMeetpunt(nodes, naam) {
   nodes.forEach(n => {
-    if (n.name)  n.name  = n.name.replace(/\{meetpunt naam\}/gi, naam);
-    if (n.label) n.label = n.label.replace(/\{meetpunt naam\}/gi, naam);
+    // Vervang alle varianten van meetpunt naam placeholder
+    const replace = (s) => s
+      .replace(/\{meetpunt naam\}/gi, naam)
+      .replace(/\{meetpunt\}/gi, naam)
+      .replace(/Meetpunt/g, naam)
+      .replace(/meetpunt/g, naam);
+    if (n.name)  n.name  = replace(n.name);
+    if (n.label) n.label = replace(n.label);
   });
 }
 
@@ -275,11 +281,27 @@ return msg;`,
   // One decoder per device
   devices.forEach((device, idx) => {
     const libNodes = loadLib('lorawan', device.template);
-
     const { nodes: decoderNodes } = remapIds(libNodes);
-    const entryId = decoderNodes[0].id;
 
     replaceMeetpunt(decoderNodes, device.naam || device.template);
+
+    // Entry node: voor Adeunis = Base64 to Hex (eerste in chain, niemand wijst ernaar)
+    // Voor standaard decoders = eerste node
+    const allWiredTo = new Set(decoderNodes.flatMap(n => (n.wires || []).flat()));
+    const entryNode = decoderNodes.find(n =>
+      !allWiredTo.has(n.id) && n.type === 'function'
+    ) || decoderNodes[0];
+    const entryId = entryNode.id;
+
+    // Formatter = function met ASSET/PLACEHOLDER, geen Base64/catch/error/parse
+    const formatter = decoderNodes.find(n =>
+      n.type === 'function' &&
+      (n.func?.includes('ASSET') || n.func?.includes('PLACEHOLDER')) &&
+      !n.name?.toLowerCase().includes('base64') &&
+      !n.name?.toLowerCase().includes('catch') &&
+      !n.name?.toLowerCase().includes('error') &&
+      !n.name?.toLowerCase().includes('parse')
+    );
 
     decoderNodes.forEach(n => {
       n.z = tabId;
@@ -291,9 +313,9 @@ return msg;`,
           n.func = replaceDev(n.func, ids[0]);
         }
       }
-      // Decoder output → link out node
-      if (n.wires) {
-        n.wires = n.wires.map(() => [loraLinkOutId]);
+      // Originele wires bewaren BEHALVE voor de formatter — die krijgt altijd de link out
+      if (n === formatter) {
+        n.wires = [[loraLinkOutId]];
       }
       if (n.x !== undefined) {
         n.x += 400;
@@ -301,11 +323,19 @@ return msg;`,
       }
     });
 
+    // Naam suffix toevoegen als nog niet aanwezig
+    if (formatter && device.naam && !formatter.name.includes(device.naam)) {
+      formatter.name = formatter.name + ' - ' + device.naam;
+    }
+
+    // Link out nodes uit decoder verwijderen — wij hebben 1 gedeelde
+    const filteredNodes = decoderNodes.filter(n => n.type !== 'link out');
+
     switchNode.wires[idx] = [entryId];
-    nodes.push(...decoderNodes);
+    nodes.push(...filteredNodes);
   });
 
-  // Link out node — rechts van de decoders, verticaal gecentreerd
+  // Gedeelde link out node
   const loraLinkOutY = devices.length === 1 ? 80 : Math.round((80 + (devices.length - 1) * 120) / 2);
   nodes.push({
     id: loraLinkOutId,
@@ -328,43 +358,25 @@ return msg;`,
  * Devices are chained: inject → device1 → device2 → ... (via go2Next output2)
  */
 function buildModbus(devices, tabId, linkInId) {
-  // Shared modbus-client (Waveshare, always the same IP)
-  const clientId = uid();
-  const sharedClient = {
-    id: clientId,
-    type: 'modbus-client',
-    name: 'Waveshare',
-    clienttype: 'tcp',
-    bufferCommands: true,
-    stateLogEnabled: false,
-    queueLogEnabled: false,
-    failureLogEnabled: true,
-    tcpHost: '192.168.31.40',
-    tcpPort: '502',
-    tcpType: 'TCP-RTU-BUFFERED',
-    serialPort: '/dev/ttyUSB',
-    serialType: 'RTU-BUFFERED',
-    serialBaudrate: '9600',
-    serialDatabits: '8',
-    serialStopbits: '1',
-    serialParity: 'none',
-    serialConnectionDelay: '100',
-    serialAsciiResponseStartDelimiter: '0x3A',
-    unit_id: 1,
-    commandDelay: 1,
-    clientTimeout: 5000,
-    reconnectOnTimeout: true,
-    reconnectTimeout: 5000,
-    parallelUnitIdsAllowed: true,
-    showWarnings: true,
-    showLogs: true,
-  };
-
-  const allNodes  = [sharedClient];
+  // Modbus clients worden uit de decoder libs gehaald en gededupliceerd op naam.
+  // Elke unieke client naam krijgt één gedeeld ID.
+  const clientsByName = {}; // name → { id, node }
+  const allNodes  = [];
   const groups    = [];
 
   devices.forEach((device, idx) => {
     const libNodes = loadLib('modbus', device.template);
+
+    // Haal modbus-client(s) uit lib, dedupliceer op naam
+    const libClients = libNodes.filter(n => n.type === 'modbus-client');
+    libClients.forEach(client => {
+      if (!clientsByName[client.name]) {
+        const newId = uid();
+        const clientNode = { ...client, id: newId };
+        clientsByName[client.name] = { id: newId, node: clientNode };
+        allNodes.push(clientNode);
+      }
+    });
 
     // Verwijder modbus-client én inject uit lib — wij beheren die zelf
     const filtered = libNodes.filter(n => n.type !== 'modbus-client' && n.type !== 'inject');
@@ -392,6 +404,10 @@ function buildModbus(devices, tabId, linkInId) {
     const linkOutNode = remapped.find(n => n.type === 'link out');
 
     if (!getterNode) throw new Error(`Geen modbus-getter gevonden in template ${device.template}`);
+
+    // Zoek de juiste client voor deze decoder op naam
+    const libClient = libNodes.find(n => n.type === 'modbus-client');
+    const clientId  = libClient ? clientsByName[libClient.name]?.id : Object.values(clientsByName)[0]?.id;
 
     remapped.forEach(n => {
       n.z = tabId;

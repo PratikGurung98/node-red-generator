@@ -1,0 +1,326 @@
+[
+    {
+        "id": "pas800_client",
+        "type": "modbus-client",
+        "name": "PAS800",
+        "clienttype": "tcp",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": true,
+        "tcpHost": "192.168.1.100",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyUSB",
+        "serialType": "RTU-BUFFERD",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "0x3A",
+        "unit_id": 1,
+        "commandDelay": 1,
+        "clientTimeout": 5000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 5000,
+        "parallelUnitIdsAllowed": true,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "grp_powertag",
+        "type": "group",
+        "z": "66f1330d3cfbad85",
+        "name": "POWERTAG_PAS800 METERNAAM",
+        "style": {
+            "label": true,
+            "fill": "#1a6496",
+            "color": "#ffffff"
+        },
+        "nodes": [
+            "pt_comment_trigger",
+            "pt_comment_modbus",
+            "pt_comment_dev",
+            "pt_comment_dev2",
+            "pt_comment_info",
+            "pt_comment_link",
+            "pt_read",
+            "pt_catch",
+            "pt_parse",
+            "pt_json",
+            "pt_decode",
+            "pt_error",
+            "pt_go2next",
+            "pt_linkout"
+        ],
+        "x": 154,
+        "y": 899,
+        "w": 1372,
+        "h": 222
+    },
+    {
+        "id": "pt_inject",
+        "type": "inject",
+        "z": "66f1330d3cfbad85",
+        "name": "15min trigger",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "900",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "5",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 280,
+        "y": 1080,
+        "wires": [
+            [
+                "pt_read"
+            ]
+        ]
+    },
+    {
+        "id": "pt_comment_trigger",
+        "type": "comment",
+        "z": "66f1330d3cfbad85",
+        "g": "grp_powertag",
+        "name": "Stel trigger offset in",
+        "info": "inject once after (modbus_address) seconds, then every 15 min",
+        "x": 290,
+        "y": 1040,
+        "wires": []
+    },
+    {
+        "id": "pt_comment_modbus",
+        "type": "comment",
+        "z": "66f1330d3cfbad85",
+        "g": "grp_powertag",
+        "name": "Set Unit-Id (PowerTag slot)",
+        "info": "Unit-Id = virtual server ID van de PowerTag in de PAS800\nStandaard: eerste PowerTag = 100, tweede = 101, ...\nControleer via PAS800 webinterface > Settings > Wireless devices",
+        "x": 500,
+        "y": 1040,
+        "wires": []
+    },
+    {
+        "id": "pt_comment_dev",
+        "type": "comment",
+        "z": "66f1330d3cfbad85",
+        "g": "grp_powertag",
+        "name": "Voer vlegel DEV in",
+        "info": "const Dev = \"ASSET\";",
+        "x": 1130,
+        "y": 1000,
+        "wires": []
+    },
+    {
+        "id": "pt_comment_dev2",
+        "type": "comment",
+        "z": "66f1330d3cfbad85",
+        "g": "grp_powertag",
+        "name": "Voer vlegel DEV in",
+        "info": "const Dev = \"ASSET\";",
+        "x": 1370,
+        "y": 1000,
+        "wires": []
+    },
+    {
+        "id": "pt_comment_info",
+        "type": "comment",
+        "z": "66f1330d3cfbad85",
+        "g": "grp_powertag",
+        "name": "LEES DIT VOOR INFO OVER OUTPUTS/INPUTS",
+        "info": "VOOR MODBUS READ node\nverbind deze input met oftewel\nvorige \"go2Next || retry\" node of met \nallereerste trigger\n\nVOOR go2Next || retry\nverbind output 2 met de read node van \nde volgende modbus read en \noutput 3 zou verbonden moeten zijn met link out iothub\n\nVOOR error handling && POWERTAG decoder\ndeze zijn verbonden met de link out voor iothub\n(deze zouden allebei reeds verbonden\nmoeten zijn met input van retry node)",
+        "x": 790,
+        "y": 1000,
+        "wires": []
+    },
+    {
+        "id": "pt_comment_link",
+        "type": "comment",
+        "z": "66f1330d3cfbad85",
+        "g": "grp_powertag",
+        "name": "LINK2IOTHUB",
+        "info": "",
+        "x": 1420,
+        "y": 940,
+        "wires": []
+    },
+    {
+        "id": "pt_read",
+        "type": "modbus-getter",
+        "z": "66f1330d3cfbad85",
+        "g": "grp_powertag",
+        "name": "Read",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "unitid": "100",
+        "dataType": "HoldingRegister",
+        "adr": "3000",
+        "quantity": "216",
+        "server": "pas800_client",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": false,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 450,
+        "y": 1080,
+        "wires": [
+            [
+                "pt_catch"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "pt_catch",
+        "type": "function",
+        "z": "66f1330d3cfbad85",
+        "g": "grp_powertag",
+        "name": "catch error",
+        "func": "if (msg.error) {\n  msg.failReason = msg.error;\n  return [null, msg];\n}\n\nif (!Array.isArray(msg.payload)) {\n  msg.failReason = `payload_not_array (${typeof msg.payload})`;\n  return [null, msg];\n}\n\nif (msg.payload.length !== 216) {\n  msg.failReason = `bad_length (${msg.payload.length})`;\n  return [null, msg];\n}\n\nif (msg.payload.every(v => v === 0)) {\n  msg.failReason = \"all_zero_payload\";\n  return [null, msg];\n}\n\nreturn [msg, null];\n",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 590,
+        "y": 1080,
+        "wires": [
+            [
+                "pt_parse"
+            ],
+            [
+                "pt_error"
+            ]
+        ]
+    },
+    {
+        "id": "pt_parse",
+        "type": "function",
+        "z": "66f1330d3cfbad85",
+        "g": "grp_powertag",
+        "name": "Parse PowerTag",
+        "func": "// Alle registers starten op adres 3000\n// index in array = register - 3000\n\nconst buffer = new ArrayBuffer(4);\nconst intView = new Uint32Array(buffer);\nconst floatView = new Float32Array(buffer);\n\nfunction readFloat(hi, lo) {\n  intView[0] = (hi << 16) | lo;\n  return floatView[0].toFixed(3);\n}\n\n// INT64 over 4 registers → kWh (eenheid is Wh in register)\nfunction readINT64_kWh(r0, r1, r2, r3) {\n  // Controleer op invalid value (0x8000000000000000)\n  if (r0 === 0x8000 && r1 === 0 && r2 === 0 && r3 === 0) return null;\n  const hi = r0 * 4294967296 + r1 * 65536 + r2;\n  // Vereenvoudigd: voor energiewaarden typisch binnen Number.MAX_SAFE_INTEGER\n  const val = (r0 * Math.pow(2, 48)) + (r1 * Math.pow(2, 32)) + (r2 * Math.pow(2, 16)) + r3;\n  return (val / 1000).toFixed(3); // Wh → kWh\n}\n\nconst p = msg.payload;\nvar data = {};\n\n// STROOM (Float32) — offset = register - 3000\ndata[\"I1\"] = readFloat(p[0],  p[1]);   // reg 3000\ndata[\"I2\"] = readFloat(p[2],  p[3]);   // reg 3002\ndata[\"I3\"] = readFloat(p[4],  p[5]);   // reg 3004\n\n// SPANNING fase-fase (Float32)\ndata[\"U12\"] = readFloat(p[20], p[21]); // reg 3020\ndata[\"U23\"] = readFloat(p[22], p[23]); // reg 3022\ndata[\"U31\"] = readFloat(p[24], p[25]); // reg 3024\n\n// SPANNING fase-nul (Float32)\ndata[\"U1\"] = readFloat(p[28], p[29]); // reg 3028\ndata[\"U2\"] = readFloat(p[30], p[31]); // reg 3030\ndata[\"U3\"] = readFloat(p[32], p[33]); // reg 3032\n\n// VERMOGEN per fase (Float32)\ndata[\"P1\"] = readFloat(p[54], p[55]); // reg 3054\ndata[\"P2\"] = readFloat(p[56], p[57]); // reg 3056\ndata[\"P3\"] = readFloat(p[58], p[59]); // reg 3058\n\n// TOTAAL ACTIEF VERMOGEN (Float32)\ndata[\"PT\"] = readFloat(p[60], p[61]); // reg 3060\n\n// SCHIJNBAAR VERMOGEN totaal (Float32)\ndata[\"ST\"] = readFloat(p[76], p[77]); // reg 3076\n\n// COS PHI totaal (Float32)\ndata[\"PFT\"] = readFloat(p[84], p[85]); // reg 3084\n\n// ENERGIE — INT64, 4 registers elk\n// reg 3204 → index 204: totaal delivered+received (niet gebruikt)\n// reg 3208 → index 208: import (delivered)\n// reg 3212 → index 212: export (received)\ndata[\"PimpT\"] = readINT64_kWh(p[208], p[209], p[210], p[211]); // reg 3208\ndata[\"PexpT\"] = readINT64_kWh(p[212], p[213], p[214], p[215]); // reg 3212\n\nvar nmsg = {};\nnmsg.topic = 'telemetry';\nnmsg.payload = data;\nreturn nmsg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 770,
+        "y": 1080,
+        "wires": [
+            [
+                "pt_json"
+            ]
+        ]
+    },
+    {
+        "id": "pt_json",
+        "type": "json",
+        "z": "66f1330d3cfbad85",
+        "g": "grp_powertag",
+        "name": "Conv",
+        "property": "payload",
+        "action": "obj",
+        "pretty": false,
+        "x": 940,
+        "y": 1080,
+        "wires": [
+            [
+                "pt_decode"
+            ]
+        ]
+    },
+    {
+        "id": "pt_decode",
+        "type": "function",
+        "z": "66f1330d3cfbad85",
+        "g": "grp_powertag",
+        "name": "POWERTAG_PAS800",
+        "func": "let mid = global.get(\"mid\") || 0;\n\nconst Dev = \"ASSET\"; // <-- jouw asset ID\n\n// ID mapping — zelfde structuur als Eastron\nconst idMapping = {\n  \"U1\":    3000,\n  \"U2\":    3100,\n  \"U3\":    3200,\n  \"U12\":   3050,\n  \"U23\":   3060,\n  \"U31\":   3070,\n  \"I1\":    3300,\n  \"I2\":    3400,\n  \"I3\":    3500,\n  \"P1\":    3600,\n  \"P2\":    3700,\n  \"P3\":    3800,\n  \"PT\":    4200,\n  \"ST\":    4250,\n  \"PFT\":   4400,\n  \"PimpT\": 4600,\n  \"PexpT\": 4500\n};\n\nconst mappingLower = {};\nObject.keys(idMapping).forEach(k => mappingLower[k.toLowerCase()] = idMapping[k]);\n\nlet result = {\n  MID: mid,\n  D: [{\n    Dev: Dev,\n    ED: [],\n    MD: []\n  }]\n};\n\nconst payloadData = msg.payload || {};\n\nfor (let key in payloadData) {\n  if (!payloadData.hasOwnProperty(key)) continue;\n\n  let id = idMapping[key];\n  if (typeof id === \"undefined\") {\n    id = mappingLower[key.toLowerCase()];\n  }\n\n  if (typeof id !== \"undefined\") {\n    let rawVal = payloadData[key];\n    if (rawVal === null || typeof rawVal === \"object\") {\n      node.warn(`Overslaan ${key}: waarde is null of geen primitief`);\n      continue;\n    }\n    let num = parseFloat(String(rawVal).trim().replace(\",\", \".\"));\n    if (!Number.isFinite(num)) {\n      node.warn(`Ongeldige waarde voor ${key}: \"${rawVal}\" — overslaan`);\n      continue;\n    }\n    result.D[0].MD.push({ Id: id, Val: num });\n  } else {\n    node.debug(`Key niet in mapping: ${key}`);\n  }\n}\n\nresult.D[0].TS = new Date().toISOString();\n\nif (result.D[0].MD.length > 0) {\n  global.set(\"mid\", mid + 1);\n}\n\nmsg.payload = result;\nmsg.queque = \"success\";\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1110,
+        "y": 1080,
+        "wires": [
+            [
+                "pt_go2next",
+                "pt_linkout"
+            ]
+        ]
+    },
+    {
+        "id": "pt_error",
+        "type": "function",
+        "z": "66f1330d3cfbad85",
+        "g": "grp_powertag",
+        "name": "error handling",
+        "func": "let mid = global.get(\"mid\") || 0;\n\nconst Dev = \"ASSET\"; // <-- zelfde asset ID\nconst MODBUS_FAIL_EVENT_ID = 7199;\n\nlet reason = msg.failReason || msg.error || \"MODBUS_FAIL\";\n\nconst unitId = msg.unitId ?? msg.queueUnitId ?? undefined;\nconst qLen = msg.queueLengthByUnitId?.queueLength ?? msg.queueLength ?? undefined;\n\nlet details = [];\nif (unitId !== undefined) details.push(`unitId=${unitId}`);\nif (qLen   !== undefined) details.push(`queueLen=${qLen}`);\nif (msg.topic)     details.push(`topic=${msg.topic}`);\nif (msg.messageId) details.push(`messageId=${msg.messageId}`);\n\nlet val = String(reason);\nif (details.length) val += ` | ${details.join(\", \")}`;\n\nconst result = {\n  MID: mid,\n  D: [{\n    Dev: Dev,\n    ED: [{ Id: MODBUS_FAIL_EVENT_ID, Val: val, Sev: 2 }],\n    MD: [],\n    TS: new Date().toISOString()\n  }]\n};\n\nglobal.set(\"mid\", mid + 1);\n\nmsg.payload = result;\nmsg.queque  = \"fail\";\nmsg.topic   = \"telemetry\";\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1110,
+        "y": 1040,
+        "wires": [
+            [
+                "pt_go2next",
+                "pt_linkout"
+            ]
+        ]
+    },
+    {
+        "id": "pt_go2next",
+        "type": "function",
+        "z": "66f1330d3cfbad85",
+        "g": "grp_powertag",
+        "name": "go2Next || retry",
+        "func": "const DELAY_MS = 5000;\nconst MAX_RETRY = 6;\n\nconst Dev = \"ASSET\";\nconst RETRY_WARN_EVENT_ID = 7198;\n\nlet q = (msg.queque || \"\").toLowerCase();\nlet retry = global.get(\"retry\") || 0;\n\nfunction sendLater(out1, out2, out3) {\n  setTimeout(() => node.send([out1, out2, out3]), DELAY_MS);\n}\n\nif (q === \"fail\") {\n  retry += 1;\n  global.set(\"retry\", retry);\n\n  if (retry < MAX_RETRY) {\n    sendLater({ ...msg, action: \"go\", retry }, null, null);\n    return;\n  }\n\n  global.set(\"retry\", 0);\n  sendLater(null, { ...msg, action: \"stop\", retry: MAX_RETRY }, null);\n  return;\n}\n\nif (q === \"success\") {\n  const retriesUsed = retry;\n\n  if (retriesUsed <= 1) {\n    global.set(\"retry\", 0);\n    sendLater(null, { ...msg, action: \"ok\", retry: 0 }, null);\n    return;\n  }\n\n  global.set(\"retry\", 0);\n\n  const m2 = { ...msg, action: \"ok_but_retried\", info: `success but retried ${retriesUsed} times`, retriesUsed, retry: 0 };\n\n  const mid = global.get(\"mid\") || 0;\n  global.set(\"mid\", mid + 1);\n\n  const m3 = {\n    topic: \"telemetry\",\n    queque: \"event\",\n    payload: {\n      MID: mid,\n      D: [{\n        Dev,\n        ED: [{ Id: RETRY_WARN_EVENT_ID, Val: `success but retried ${retriesUsed} times`, Sev: 2 }],\n        MD: [],\n        TS: new Date().toISOString()\n      }]\n    }\n  };\n\n  sendLater(null, m2, m3);\n  return;\n}\n\nsendLater(null, { ...msg, action: \"unknown_queque\", retry }, null);\n",
+        "outputs": 3,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1330,
+        "y": 1080,
+        "wires": [
+            [
+                "pt_read"
+            ],
+            [],
+            [
+                "pt_linkout"
+            ]
+        ]
+    },
+    {
+        "id": "pt_linkout",
+        "type": "link out",
+        "z": "66f1330d3cfbad85",
+        "g": "grp_powertag",
+        "name": "LINK2IOTHUB",
+        "mode": "link",
+        "links": [],
+        "x": 1485,
+        "y": 980,
+        "wires": []
+    }
+]

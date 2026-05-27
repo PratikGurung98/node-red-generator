@@ -172,7 +172,7 @@
   {
     "id": "3c0ffb9fc0425e16",
     "type": "comment",
-    "name": "⚠️  UPDATE SAS TOKEN na import → mqtt broker config",
+    "name": "\u26a0\ufe0f  UPDATE SAS TOKEN na import \u2192 mqtt broker config",
     "info": "az iot hub generate-sas-token --hub-name DelhaizeIotHub.azure-devices.net --device-id BOXNAME --duration 1576800000",
     "x": 830,
     "y": 100,
@@ -220,7 +220,7 @@
     "y": 340,
     "wires": [
       [
-        "ccf3703c88c2b23d"
+        "d4c2a5cc014fc69e"
       ]
     ]
   },

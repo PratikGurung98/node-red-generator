@@ -18,7 +18,10 @@ function buildSQL({ gatewayAssetId, gatewayMeterAssetId, gatewayMeterNaam, build
   devices.forEach(device => {
     const ids  = device.assetIds?.length ? device.assetIds : [device.assetId];
     ids.forEach((assetId, i) => {
-      const naam   = ids.length > 1 ? `${device.naam || ''} ${i + 1}`.trim() : (device.naam || '');
+      // Bij multi-output: eigen naam per asset ID indien ingevuld, anders fallback naar naam + index
+      const naam   = (device.namen && device.namen[i])
+        ? device.namen[i]
+        : (ids.length > 1 ? `${device.naam || ''} ${i + 1}`.trim() : (device.naam || ''));
       const catSql = device.meterCategory ? `'${esc(device.meterCategory)}'` : `''`;
       rows.push({
         name:         esc(assetId),

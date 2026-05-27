@@ -17,7 +17,9 @@ function buildSQL({ gatewayAssetId, gatewayMeterAssetId, gatewayMeterNaam, build
   devices.forEach(device => {
     const ids = device.assetIds?.length ? device.assetIds : [device.assetId];
     ids.forEach((assetId, i) => {
-      const naam   = ids.length > 1 ? `${device.naam || ''} ${i + 1}`.trim() : (device.naam || '');
+      const naam   = (device.namen && device.namen[i])
+        ? device.namen[i]
+        : (ids.length > 1 ? `${device.naam || ''} ${i + 1}`.trim() : (device.naam || ''));
       const catSql = device.meterCategory ? `'${esc(device.meterCategory)}'` : "''";
       rows.push({
         name:         esc(assetId),
@@ -53,7 +55,7 @@ SELECT @GwMeterTypeId = Id FROM dbo.MeterTypes WHERE Tag = 'GW_DRY_UG56_MLSGHT_V
 INSERT INTO dbo.Meters
   (Name, ReadableName, GatewayId, MeterTypeId, ParentMeterId, RetentionDays, MeterCategory)
 VALUES
-  ('${gwMeterName}', ${gwMeterReadableName}, @GatewayDbId, @GwMeterTypeId, NULL, 0, NULL);
+  ('${gwMeterName}', ${gwMeterReadableName}, @GatewayDbId, @GwMeterTypeId, NULL, 0, '');
 
 -- 4) Meters aanmaken
 INSERT INTO dbo.Meters

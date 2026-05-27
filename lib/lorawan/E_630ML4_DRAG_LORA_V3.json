@@ -1,0 +1,20 @@
+[
+    {
+        "id": "e58dc0222eccf75c",
+        "type": "function",
+        "z": "0911f48053801c0f",
+        "name": "E_630ML4_DRAG_LORA_V2",
+        "func": "// ============================================================\n// Node-RED Function node: Dragino RS485-LB decoder\n// Eastron SDM630MCT (ML1 / ML4 / RC) → Vlegelbox formaat\n//\n// AT command volgorde (= volgorde in payload):\n// CMD1: 0x0034 PT   total system power W\n// CMD2: 0x003C QT   total system VAr\n// CMD3: 0x0048      total import kWh\n// CMD4: 0x004A      total export kWh\n// CMD5: 0x004C      total export kVArh\n// CMD6: 0x004E      total import kVArh\n// CMD7: 0x003E PFT  total system power factor\n// CMD8: 0x0056      max system power demand VA\n// ============================================================\n\nconst Dev = \"BEGINT_MET_36\"; // <-- jouw asset ID\n\n// Volgorde MOET overeenkomen met de AT command volgorde!\nconst channels = [\n    { prop: \"total_system_power_W\",      id: 4200, scaleBy1000: true  }, // CMD1 slot 0 — W  → kW\n    { prop: \"total_system_var_VAr\",       id: 4300, scaleBy1000: true  }, // CMD2 slot 1 — VAr → kVAr\n    { prop: \"total_import_kWh\",           id: 4600, scaleBy1000: false }, // CMD3 slot 2 — al in kWh\n    { prop: \"total_export_kWh\",           id: 4500, scaleBy1000: false }, // CMD4 slot 3 — al in kWh\n    { prop: \"total_export_kVArh\",         id: 4700, scaleBy1000: false }, // CMD5 slot 4 — al in kVArh\n    { prop: \"total_import_kVArh\",         id: 4800, scaleBy1000: false }, // CMD6 slot 5 — al in kVArh\n    { prop: \"total_system_power_factor\",  id: 4400, scaleBy1000: false }, // CMD7 slot 6 — geen schaling\n    { prop: \"max_system_power_demand_VA\", id: 5700, scaleBy1000: true  }  // CMD8 slot 7 — VA → kVA\n];\n\nconst HEADER_LEN = 3;\n\n// Decode payload\nconst buf = (typeof msg.payload === \"string\")\n    ? Buffer.from(msg.payload, \"base64\")\n    : msg.payload;\n\nif (!Buffer.isBuffer(buf) || buf.length < HEADER_LEN + 4) {\n    node.error(`Payload te kort: ${buf ? buf.length : 0} bytes`, msg);\n    return null;\n}\n\n// Batterij uit bytes 0-1 (bit 15 = low battery flag, masken)\nconst battery = (((buf[0] << 8) | buf[1]) & 0x7FFF) / 1000;\n\n// Float lezen (Big-Endian IEEE754)\nfunction readFloatBE(offset) {\n    if (offset + 4 > buf.length) return null;\n    const v = buf.readFloatBE(offset);\n    return isNaN(v) ? null : Math.round(v * 100) / 100;\n}\n\n// MD array opbouwen\nconst mid = global.get(\"mid\") || 0;\nconst MD = [];\n\nchannels.forEach(function(ch, i) {\n    let val = readFloatBE(HEADER_LEN + i * 4);\n    if (val === null) return;\n    if (ch.scaleBy1000) {\n        val = Math.round((val / 1000) * 1000) / 1000;\n    }\n    MD.push({ Id: ch.id, Val: val });\n});\n\n// Batterij\nMD.push({ Id: 7200, Val: battery });\n\n// Radio metadata\nif (msg.snr  !== undefined) MD.push({ Id: 5400, Val: parseFloat(msg.snr)  });\nif (msg.rssi !== undefined) MD.push({ Id: 5500, Val: parseFloat(msg.rssi) });\nif (msg.dr?.spreadFactor !== undefined)\n    MD.push({ Id: 5200, Val: parseFloat(msg.dr.spreadFactor) });\n\nglobal.set(\"mid\", mid + 1);\n\nmsg.payload = {\n    MID: mid,\n    D: [{\n        Dev: Dev,\n        ED:  [],\n        MD:  MD,\n        TS:  msg.time ? new Date(msg.time).toISOString() : new Date().toISOString()\n    }]\n};\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 370,
+        "y": 180,
+        "wires": [
+            []
+        ]
+    }
+]

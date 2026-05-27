@@ -540,7 +540,7 @@
           <label>${identifierLabel}</label>
           <input type="text" name="${identifierName}" placeholder="${identifierPlaceholder}">
         </div>
-        <div class="full">
+        <div class="full" id="naam-single-${idx}">
           <label>Meetpunt naam <span style="color:#374151;font-size:11px">(vervangt {meetpunt naam})</span></label>
           <input type="text" name="naam" placeholder="bv. Environment, Cooling PROD, HVAC...">
         </div>
@@ -763,14 +763,24 @@
   // ── Template outputs ──────────────────────────────────────────────────────
 
   function onTemplateChange(idx, outputs) {
-    const container = document.getElementById(`asset-fields-${idx}`);
+    const container  = document.getElementById(`asset-fields-${idx}`);
+    const naamSingle = document.getElementById(`naam-single-${idx}`);
     if (!container) return;
+    // Verberg de enkele naam als multi-output (naam zit per output)
+    if (naamSingle) naamSingle.style.display = outputs > 1 ? 'none' : '';
     let html = '';
     if (outputs === 1) {
       html = `<label>Asset ID (Dev)</label><input type="text" name="assetId_0" placeholder="360029042026131259">`;
     } else {
       for (let i = 0; i < outputs; i++) {
-        html += `<label>Asset ID device ${i + 1}</label><input type="text" name="assetId_${i}" placeholder="360029042026...">`;
+        html += `
+          <div style="border:1px solid #2d3148;border-radius:6px;padding:10px;background:#0a0d14;margin-bottom:6px">
+            <div style="font-size:11px;font-weight:700;color:#64748b;margin-bottom:8px;letter-spacing:.05em">OUTPUT ${i + 1}</div>
+            <label>Asset ID</label>
+            <input type="text" name="assetId_${i}" placeholder="360029042026...">
+            <label>Meetpunt naam</label>
+            <input type="text" name="naam_${i}" placeholder="bv. Cooling PROD, HVAC...">
+          </div>`;
       }
     }
     container.innerHTML = html;
@@ -787,12 +797,19 @@
       const commType = card.dataset.commType;
       const idx      = parseInt(card.id.split('-')[1]);
       const assetIds = Array.from(card.querySelectorAll('[name^="assetId_"]')).map(i => i.value.trim()).filter(Boolean);
+      // Namen: bij multi-output per asset ID een eigen naam, anders gewone naam
+      const naamFields = Array.from(card.querySelectorAll('[name^="naam_"]'));
+      const namen = naamFields.length > 0
+        ? naamFields.map(i => i.value.trim())
+        : [card.querySelector('[name="naam"]')?.value?.trim() || ''];
+
       const d = {
         commType,
         template:         document.getElementById(`decoder-val-${idx}`)?.value?.trim(),
         assetId:          assetIds[0],
         assetIds,
-        naam:             card.querySelector('[name="naam"]')?.value?.trim(),
+        naam:             namen[0],
+        namen,
         meterTypeId:      document.getElementById(`metertype-val-${idx}`)?.value?.trim(),
         meterCategory:    getMeterCategory(idx),
         enerseeDataTypes: getEnerseeDataTypes(idx),

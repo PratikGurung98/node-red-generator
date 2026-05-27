@@ -26,8 +26,18 @@ app.get('/api/templates', (_req, res) => {
         try {
           const ext  = path.extname(f);
           const full = path.join(__dirname, 'lib', dir, f);
-          const nodes = ext === '.js' ? require(full) : JSON.parse(fs.readFileSync(full, 'utf8'));
-          const fn = Array.isArray(nodes) ? nodes.find(n => n.type === 'function') : null;
+          // Altijd als JSON lezen — .js bestanden zijn Node-RED flow JSON, geen Node.js modules
+          const nodes = JSON.parse(fs.readFileSync(full, 'utf8'));
+          // Zoek de formatter/decoder node: heeft 'ASSET' in func maar is GEEN catch/error/go2Next
+          const fn = Array.isArray(nodes)
+            ? (nodes.find(n => n.type === 'function'
+                && n.func?.includes('ASSET')
+                && !n.name?.toLowerCase().includes('catch')
+                && !n.name?.toLowerCase().includes('error')
+                && !n.name?.toLowerCase().includes('go2next')
+                && !n.name?.toLowerCase().includes('parse')
+              ) || nodes.find(n => n.type === 'function'))
+            : null;
           if (fn?.outputs) outputs = fn.outputs;
         } catch (_) {}
         return { name, outputs };

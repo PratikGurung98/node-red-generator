@@ -1,95 +1,102 @@
 [
-    {
-        "id": "b2e7c367a83541e5",
-        "type": "group",
-        "z": "7b1e1d9d8e395564",
-        "name": "G_PNP_ADEU_LORA_V1 - {meetpunt naam}",
-        "style": {
-            "fill": "#5caa7e",
-            "label": true,
-            "color": "#ffffff"
-        },
-        "nodes": [
-            "fd12b3a11e6dbc88",
-            "c75ac73728293a99",
-            "fd5e323ef41cccc9",
-            "a127fe3a8649d481"
-        ],
-        "x": 164,
-        "y": 259,
-        "w": 652,
-        "h": 122
+  {
+    "id": "b2e7c367a83541e5",
+    "type": "group",
+    "z": "7b1e1d9d8e395564",
+    "name": "G_PNP_ADEU_LORA_V1 - {meetpunt naam}",
+    "style": {
+      "fill": "#5caa7e",
+      "label": true,
+      "color": "#ffffff"
     },
-    {
-        "id": "fd12b3a11e6dbc88",
-        "type": "adeunis-codecs",
-        "z": "7b1e1d9d8e395564",
-        "g": "b2e7c367a83541e5",
-        "name": "",
-        "x": 450,
-        "y": 340,
-        "wires": [
-            [
-                "fd5e323ef41cccc9"
-            ]
-        ]
-    },
-    {
-        "id": "c75ac73728293a99",
-        "type": "function",
-        "z": "7b1e1d9d8e395564",
-        "g": "b2e7c367a83541e5",
-        "name": "Base64 to Hex",
-        "func": "// Decode base64 naar hex\nconst base64 = msg.payload;\nconst buffer = Buffer.from(base64, 'base64');\nconst hex = buffer.toString('hex');\n\n// Stel productType in\nmsg.productType = \"pulse\";\n\n// Overschrijf payload met hex-string\nmsg.payload = hex;\n\nreturn msg;\n",
-        "outputs": 1,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 270,
-        "y": 340,
-        "wires": [
-            [
-                "fd12b3a11e6dbc88"
-            ]
-        ]
-    },
-    {
-        "id": "fd5e323ef41cccc9",
-        "type": "function",
-        "z": "7b1e1d9d8e395564",
-        "g": "b2e7c367a83541e5",
-        "name": "G_PNP_ADEU_LORA_V1",
-        "func": "// Haal globale MID op\nlet mid = global.get(\"mid\") || 0;\n\n// Device ID handmatig of via msg.DevEUI\nconst Dev = \"ASSET_ID_START_MET_36\";\n\n// Mapping: kanaal → ID\nconst channelTypeMapping = {\n    A: 5600, // gas\n    B: null, // niet gebruikt\n};\n\n// Extra ID-mapping\nconst statusIdMapping = {\n    batteryTextStatus: 7100 // LOW / GOOD\n};\n\n// Input ophalen\nconst input = msg.payload;\nconst result = {\n    MID: mid,\n    D: [\n        {\n            Dev: Dev,\n            TS: new Date(input.timestamp || Date.now()).toISOString(),\n            ED: [],\n            MD: []\n        }\n    ]\n};\n\n// Vul MD-array met counterValues\nif (\n    input &&\n    Array.isArray(input.counterValues) &&\n    input.counterValues.length === 2\n) {\n    [\"A\", \"B\"].forEach((channel, index) => {\n        const id = channelTypeMapping[channel];\n        const val = input.counterValues[index];\n\n        if (id === undefined || id === null) return;\n\n        if (typeof val === \"number\") {\n            let finalVal = parseFloat(val);\n\n            // water channel A: divide by 1000\n            if (channel === \"A\") {\n                finalVal = finalVal / 1000;\n            }\n\n            result.D[0].MD.push({\n                Id: id,\n                Val: finalVal\n            });\n        }\n    });\n} else {\n    node.warn(\"Geen geldige counterValues gevonden in msg.payload\");\n}\n\n// ✅ Voeg batterijstatus toe als event (ED)\nif (input?.status?.lowBattery !== undefined) {\n    const val = input.status.lowBattery ? \"LOW\" : \"GOOD\";\n    result.D[0].ED.push({\n        Id: statusIdMapping.batteryTextStatus, // = 7100\n        Val: val,\n        Sev: 2\n    });\n}\n\n\n// MID ophogen\nglobal.set(\"mid\", mid + 1);\n\n// Zet als payload\nmsg.payload = result;\nreturn msg;",
-        "outputs": 1,
-        "timeout": "",
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 670,
-        "y": 340,
-        "wires": [
-            []
-        ]
-    },
-    {
-        "id": "a127fe3a8649d481",
-        "type": "comment",
-        "z": "7b1e1d9d8e395564",
-        "g": "b2e7c367a83541e5",
-        "name": "Voer Vlegel ASSET ID in",
-        "info": "Het gaat hier over:\nconst Dev = \"ASSET_ID_START_MET_36\";",
-        "x": 660,
-        "y": 300,
-        "wires": []
-    },
-    {
-        "id": "ad8406240621111d",
-        "type": "global-config",
-        "env": [],
-        "modules": {
-            "@adeunis/node-red-contrib-adeunis-codecs": "1.4.2"
-        }
-    }
+    "nodes": [
+      "fd12b3a11e6dbc88",
+      "c75ac73728293a99",
+      "fd5e323ef41cccc9",
+      "a127fe3a8649d481",
+      "d94de772be69fa8d"
+    ],
+    "x": 164,
+    "y": 259,
+    "w": 812,
+    "h": 122
+  },
+  {
+    "id": "fd12b3a11e6dbc88",
+    "type": "adeunis-codecs",
+    "z": "7b1e1d9d8e395564",
+    "g": "b2e7c367a83541e5",
+    "name": "",
+    "x": 450,
+    "y": 340,
+    "wires": [
+      [
+        "fd5e323ef41cccc9"
+      ]
+    ]
+  },
+  {
+    "id": "c75ac73728293a99",
+    "type": "function",
+    "z": "7b1e1d9d8e395564",
+    "g": "b2e7c367a83541e5",
+    "name": "Base64 to Hex",
+    "func": "// Decode base64 naar hex\nconst base64 = msg.payload;\nconst buffer = Buffer.from(base64, 'base64');\nconst hex = buffer.toString('hex');\n\n// Stel productType in\nmsg.productType = \"pulse\";\n\n// Overschrijf payload met hex-string\nmsg.payload = hex;\n\nreturn msg;\n",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 270,
+    "y": 340,
+    "wires": [
+      [
+        "fd12b3a11e6dbc88"
+      ]
+    ]
+  },
+  {
+    "id": "fd5e323ef41cccc9",
+    "type": "function",
+    "z": "7b1e1d9d8e395564",
+    "g": "b2e7c367a83541e5",
+    "name": "G_PNP_ADEU_LORA_V1",
+    "func": "// Haal globale MID op\nlet mid = global.get(\"mid\") || 0;\n\n// Device ID handmatig of via msg.DevEUI\nconst Dev = \"ASSET\";\n\n// Mapping: kanaal \u2192 ID\nconst channelTypeMapping = {\n    A: 5600, // gas\n    B: null, // niet gebruikt\n};\n\n// Extra ID-mapping\nconst statusIdMapping = {\n    batteryTextStatus: 7100 // LOW / GOOD\n};\n\n// Input ophalen\nconst input = msg.payload;\nconst result = {\n    MID: mid,\n    D: [\n        {\n            Dev: Dev,\n            TS: new Date(input.timestamp || Date.now()).toISOString(),\n            ED: [],\n            MD: []\n        }\n    ]\n};\n\n// Vul MD-array met counterValues\nif (\n    input &&\n    Array.isArray(input.counterValues) &&\n    input.counterValues.length === 2\n) {\n    [\"A\", \"B\"].forEach((channel, index) => {\n        const id = channelTypeMapping[channel];\n        const val = input.counterValues[index];\n\n        if (id === undefined || id === null) return;\n\n        if (typeof val === \"number\") {\n            let finalVal = parseFloat(val);\n\n            // water channel A: divide by 1000\n            if (channel === \"A\") {\n                finalVal = finalVal / 1000;\n            }\n\n            result.D[0].MD.push({\n                Id: id,\n                Val: finalVal\n            });\n        }\n    });\n} else {\n    node.warn(\"Geen geldige counterValues gevonden in msg.payload\");\n}\n\n// \u2705 Voeg batterijstatus toe als event (ED)\nif (input?.status?.lowBattery !== undefined) {\n    const val = input.status.lowBattery ? \"LOW\" : \"GOOD\";\n    result.D[0].ED.push({\n        Id: statusIdMapping.batteryTextStatus, // = 7100\n        Val: val,\n        Sev: 2\n    });\n}\n\n\n// MID ophogen\nglobal.set(\"mid\", mid + 1);\n\n// Zet als payload\nmsg.payload = result;\nreturn msg;",
+    "outputs": 1,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 670,
+    "y": 340,
+    "wires": [
+      [
+        "d94de772be69fa8d"
+      ]
+    ]
+  },
+  {
+    "id": "a127fe3a8649d481",
+    "type": "comment",
+    "z": "7b1e1d9d8e395564",
+    "g": "b2e7c367a83541e5",
+    "name": "Voer Vlegel ASSET ID in",
+    "info": "Het gaat hier over:\nconst Dev = \"ASSET_ID_START_MET_36\";",
+    "x": 660,
+    "y": 300,
+    "wires": []
+  },
+  {
+    "id": "d94de772be69fa8d",
+    "type": "link out",
+    "z": "7b1e1d9d8e395564",
+    "g": "b2e7c367a83541e5",
+    "name": "LINK2IOTHUB",
+    "mode": "link",
+    "links": [],
+    "x": 850,
+    "y": 340,
+    "wires": []
+  }
 ]
