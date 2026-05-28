@@ -291,10 +291,16 @@
     </div>
   </div>
 
-  <!-- Asset Manager -->
-  <div class="section-title">Asset Manager</div>
+  <!-- Standaard Vlegelbox items -->
+  <div class="card">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button class="generate-btn" style="padding:10px 20px;font-size:13px;width:auto;flex-shrink:0" onclick="amGenerateDefaults()">🔧 Standaard Vlegelbox items</button>
+      <div style="font-size:12px;color:#64748b">Genereert VlegelBox, Gateway, Waveshare en AM103L — vult asset IDs in stap 3 in.</div>
+    </div>
+  </div>
 
-  <!-- Zoeken -->
+  <!-- Asset Manager — zoeken -->
+  <div class="section-title">Asset Manager</div>
   <div class="card">
     <label>Asset opzoeken</label>
     <div style="display:flex;gap:8px;margin-bottom:10px">
@@ -305,19 +311,6 @@
     <div id="amResults" style="display:none;margin-top:12px">
       <div style="font-size:11px;color:#64748b;margin-bottom:6px" id="amResultCount"></div>
       <div id="amResultList" style="display:flex;flex-direction:column;gap:8px"></div>
-    </div>
-  </div>
-
-  <!-- Default assets knop -->
-  <div class="card">
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-      <button class="generate-btn" style="padding:10px 20px;font-size:13px;width:auto;flex-shrink:0" onclick="amGenerateDefaults()">🔧 Standaard Vlegelbox items</button>
-      <div style="font-size:12px;color:#64748b">Genereert de 4 standaard assets (VlegelBox, Gateway, Waveshare, AM103L) en vult de asset IDs in stap 3 in.</div>
-    </div>
-    <div id="amDefaultAssets" style="display:none;flex-direction:column;gap:10px;margin-top:14px"></div>
-    <div id="amDefaultActions" style="display:none;margin-top:14px;display:none;gap:10px;align-items:center">
-      <button class="generate-btn" style="padding:10px 20px;font-size:13px;width:auto;flex-shrink:0;background:#166534" onclick="amCreateDefaults()">📋 Aanmaken in Asset Manager</button>
-      <div id="amBulkStatus" style="font-size:12px;color:#64748b"></div>
     </div>
   </div>
 
@@ -351,6 +344,17 @@
     <button class="add-btn modbus"  onclick="addDevice('modbus')">+ Modbus device</button>
   </div>
 
+  <!-- Asset Manager — assets container -->
+  <div class="section-title">Asset Manager — aan te maken</div>
+  <div class="card">
+    <div id="amDefaultAssets" style="flex-direction:column;gap:10px;display:none"></div>
+    <div id="amEmptyMsg" style="font-size:12px;color:#374151">Klik op "Standaard Vlegelbox items" of voeg devices toe om assets voor te bereiden.</div>
+    <div id="amDefaultActions" style="margin-top:14px;gap:10px;align-items:center;display:none">
+      <button class="generate-btn" style="padding:10px 20px;font-size:13px;width:auto;flex-shrink:0;background:#166534" onclick="amCreateDefaults()">📋 Aanmaken in Asset Manager</button>
+      <div id="amBulkStatus" style="font-size:12px;color:#64748b"></div>
+    </div>
+  </div>
+
   <!-- Generate buttons -->
   <div style="display:flex;gap:10px;margin-bottom:20px">
     <button class="generate-btn" onclick="generate()" style="flex:2">Generate Node-RED Flow</button>
@@ -380,6 +384,7 @@
 
 <script>
   let templates      = { lorawan: [], modbus: [] };
+  let assetTemplates = {};
   let deviceCount    = 0;
   let lastFlow       = null;
   let lastSQL        = null;
@@ -393,11 +398,13 @@
   // ── Init ──────────────────────────────────────────────────────────────────
 
   async function init() {
-    const [t] = await Promise.all([
+    const [t, at] = await Promise.all([
       fetch('/api/templates').then(r => r.json()),
+      fetch('/api/assetmanager/templates').then(r => r.json()),
       loadCategories(),
     ]);
     templates = t;
+    assetTemplates = at;
 
     const d = await fetch('/api/db/list').then(r => r.json());
     const sel = document.getElementById('dbSelect');
@@ -800,7 +807,6 @@
     const container  = document.getElementById(`asset-fields-${idx}`);
     const naamSingle = document.getElementById(`naam-single-${idx}`);
     if (!container) return;
-    // Verberg de enkele naam als multi-output (naam zit per output)
     if (naamSingle) naamSingle.style.display = outputs > 1 ? 'none' : '';
     let html = '';
     if (outputs === 1) {
@@ -818,10 +824,109 @@
       }
     }
     container.innerHTML = html;
+
+    // Asset Manager cards genereren op basis van decoder
+    amGenerateDeviceCards(idx);
+  }
+
+  // Zoek de juiste template op basis van decoder prefix
+  function amFindTemplate(decoderName) {
+    if (!decoderName) return null;
+    // Exact match eerst
+    if (assetTemplates[decoderName]) return assetTemplates[decoderName];
+    // Prefix match — verwijder versie suffix (_V1, _V2, enz.)
+    const keys = Object.keys(assetTemplates);
+    // Sorteer op lengte (langste prefix eerst) voor specifieke matches
+    keys.sort((a, b) => b.length - a.length);
+    for (const key of keys) {
+      if (decoderName.startsWith(key)) return assetTemplates[key];
+    }
+    return null;
+  }
+
+  function amGenerateDeviceCards(deviceIdx) {
+    const decoderName = document.getElementById(`decoder-val-${deviceIdx}`)?.value?.trim();
+    console.log('[AM] amGenerateDeviceCards called', deviceIdx, decoderName);
+    const tmpl = amFindTemplate(decoderName);
+    console.log('[AM] template found:', tmpl);
+
+    // Verwijder oude cards voor dit device
+    document.querySelectorAll(`[data-device-idx="${deviceIdx}"]`).forEach(el => el.remove());
+
+    if (!tmpl || !tmpl.assets?.length) return;
+
+    const container = document.getElementById('amDefaultAssets');
+    const boxName   = document.getElementById('boxName')?.value?.trim() || '';
+    const today     = new Date().toISOString().split('T')[0];
+
+    container.style.display = 'flex';
+    const emptyMsg = document.getElementById('amEmptyMsg');
+    if (emptyMsg) emptyMsg.style.display = 'none';
+
+    tmpl.assets.forEach((asset, assetIdx) => {
+      const id = generateAssetId(50 + deviceIdx * 10 + assetIdx);
+      const card = document.createElement('div');
+      card.dataset.key       = `device_${deviceIdx}_${assetIdx}`;
+      card.dataset.assetId   = id;
+      card.dataset.deviceIdx = deviceIdx;
+      card.dataset.pictureUrl = asset.pictureUrl || 'https://placehold.net/400x400.png';
+      card.dataset.typeNumber = asset.typeNumber || '';
+      card.style.cssText = 'background:#0f1117;border:1px solid #2d3148;border-radius:8px;padding:12px';
+
+      const roleLabel = asset.role === 'communicating' ? '' : '<span style="font-size:10px;color:#f59e0b;margin-left:6px">stom toestel</span>';
+
+      card.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div>
+            <span style="font-weight:600;color:#a5b4fc;font-size:13px">${asset.typeNumber}</span>
+            ${roleLabel}
+            <span style="color:#374151;font-size:10px;margin-left:8px">ID: ${id}</span>
+          </div>
+          <button onclick="amRemoveDefault('device_${deviceIdx}_${assetIdx}')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;padding:0 4px">✕</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          <div>
+            <div style="font-size:10px;color:#64748b;margin-bottom:2px">Label</div>
+            <input type="text" data-field="label" placeholder="Label..." style="font-size:12px;padding:5px 8px;width:100%;box-sizing:border-box">
+          </div>
+          <div>
+            <div style="font-size:10px;color:#64748b;margin-bottom:2px">Name</div>
+            <input type="text" data-field="name" placeholder="Name..." style="font-size:12px;padding:5px 8px;width:100%;box-sizing:border-box">
+          </div>
+          ${(asset.varProps || []).map(p => `
+          <div>
+            <div style="font-size:10px;color:#64748b;margin-bottom:2px">${p}</div>
+            <input type="text" data-field="var_${p}" placeholder="${p}..." style="font-size:12px;padding:5px 8px;width:100%;box-sizing:border-box">
+          </div>`).join('')}
+        </div>
+        ${asset.fixedProps?.length ? `<div style="margin-top:8px;font-size:10px;color:#374151">${asset.fixedProps.map(p => `${p.name}: ${p.value}`).join(' · ')}</div>` : ''}
+        <div style="margin-top:6px;font-size:10px;color:#374151">Box/Project: ${boxName || '(nog niet ingevuld)'} · Datum: ${today}</div>
+      `;
+
+      // Als communicating en EUI beschikbaar → link aan het device EUI veld
+      if (asset.role === 'communicating') {
+        const euiInput = card.querySelector('[data-field="var_EUI"]');
+        if (euiInput) {
+          const deviceEui = document.getElementById(`device-${deviceIdx}`)?.querySelector('[name="deveui"]');
+          if (deviceEui?.value) euiInput.value = deviceEui.value;
+        }
+        // Asset ID ook terugschrijven naar het device asset ID veld
+        const assetIdField = document.getElementById(`device-${deviceIdx}`)?.querySelector('[name="assetId_0"]');
+        if (assetIdField && !assetIdField.value) assetIdField.value = id;
+      }
+
+      container.appendChild(card);
+    });
+
+    // Zorg dat de aanmaken knop zichtbaar is
+    const actions = document.getElementById('amDefaultActions');
+    if (actions) actions.style.display = 'flex';
   }
 
   function removeDevice(idx) {
     document.getElementById(`device-${idx}`)?.remove();
+    // Verwijder ook de asset manager cards voor dit device
+    document.querySelectorAll(`[data-device-idx="${idx}"]`).forEach(el => el.remove());
   }
 
   // ── Collect devices ───────────────────────────────────────────────────────
@@ -1402,6 +1507,8 @@
     container.innerHTML = '';
     container.style.display = 'flex';
     actions.style.display = 'flex';
+    const emptyMsg = document.getElementById('amEmptyMsg');
+    if (emptyMsg) emptyMsg.style.display = 'none';
 
     // Genereer IDs nu (1 sec offset per asset)
     const ids = AM_DEFAULTS.map((_, i) => generateAssetId(i));
@@ -1473,30 +1580,44 @@
     cards.forEach(card => {
       const get = field => card.querySelector(`[data-field="${field}"]`)?.value?.trim() || '';
       const key = card.dataset.key;
-      const tmpl = AM_DEFAULTS.find(t => t.key === key);
-      if (!tmpl) return;
+      const id  = card.dataset.assetId;
 
-      const id = card.dataset.assetId;
+      // Default asset (VlegelBox, Gateway, Waveshare, AM103L)
+      const defaultTmpl = AM_DEFAULTS.find(t => t.key === key);
+      // Device asset (van decoder selectie)
+      const isDeviceCard = key?.startsWith('device_');
+
+      if (!defaultTmpl && !isDeviceCard) return;
+
+      const pictureUrl = defaultTmpl?.pictureUrl || card.dataset.pictureUrl || 'https://placehold.net/400x400.png';
+      const typeNumber = defaultTmpl?.typeNumber || card.dataset.typeNumber || '';
+
       const props = [
-        { property: { name: 'Name',         dataType: 0, isPublic: true,  isForced: true  }, value: get('name') || tmpl.name },
-        { property: { name: 'Label',        dataType: 0, isPublic: true,  isForced: true  }, value: get('label') || tmpl.label },
+        { property: { name: 'Name',         dataType: 0, isPublic: true,  isForced: true  }, value: get('name') },
+        { property: { name: 'Label',        dataType: 0, isPublic: true,  isForced: true  }, value: get('label') },
         { property: { name: 'Customer',     dataType: 0, isPublic: false, isForced: true  }, value: customer },
         { property: { name: 'Project',      dataType: 0, isPublic: false, isForced: true  }, value: boxName },
         { property: { name: 'Box',          dataType: 0, isPublic: true,  isForced: false }, value: boxName },
-        { property: { name: 'Picture URL',  dataType: 5, isPublic: true,  isForced: true  }, value: tmpl.pictureUrl },
+        { property: { name: 'Picture URL',  dataType: 5, isPublic: true,  isForced: true  }, value: pictureUrl },
         { property: { name: 'Installation Date', dataType: 1, isPublic: false, isForced: true }, value: today },
         { property: { name: 'Warranty Date',     dataType: 1, isPublic: true,  isForced: true }, value: today },
-        { property: { name: 'Type Number',       dataType: 3, isPublic: true,  isForced: true }, value: tmpl.typeNumber },
-      ];
+        { property: { name: 'Type Number',       dataType: 3, isPublic: true,  isForced: true }, value: typeNumber },
+      ].filter(p => p.value);
 
-      // Variabele properties
-      tmpl.varProps.forEach(vp => {
-        const val = get(`var_${vp.name}`);
-        if (val) props.push({ property: { name: vp.name, dataType: 0, isPublic: vp.name !== 'APP KEY' && vp.name !== 'Password', isForced: false }, value: val });
+      // Alle data-field inputs als properties meepakken
+      const skipProps = ['name', 'label', 'Name', 'Label'];
+      card.querySelectorAll('[data-field]').forEach(input => {
+        const field = input.dataset.field;
+        const val   = input.value?.trim();
+        if (!field || !val) return;
+        const propName = field.startsWith('var_') ? field.slice(4) : field;
+        if (skipProps.includes(propName)) return; // nooit dupliceren
+        const isPrivate = ['APP KEY', 'Password'].includes(propName);
+        props.push({ property: { name: propName, dataType: 0, isPublic: !isPrivate, isForced: false }, value: val });
       });
 
-      // Vaste extra properties
-      tmpl.fixedProps.forEach(fp => {
+      // Vaste properties van default template
+      (defaultTmpl?.fixedProps || []).forEach(fp => {
         props.push({ property: { name: fp.name, dataType: 0, isPublic: true, isForced: false }, value: fp.value });
       });
 

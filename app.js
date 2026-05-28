@@ -148,6 +148,16 @@ app.post('/api/assetmanager/create-bulk', async (req, res) => {
   res.json({ results });
 });
 
+app.get('/api/assetmanager/templates', (_req, res) => {
+  try {
+    const p = path.join(__dirname, 'asset-templates.json');
+    if (!fs.existsSync(p)) return res.json({});
+    res.json(JSON.parse(fs.readFileSync(p, 'utf8')));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/generate', (req, res) => {
   try {
     // Hostname ophalen uit config op basis van geselecteerde IoT Hub
