@@ -510,3 +510,20 @@ db/connection.js: previewSQL (altijd rollback) + executeSQL (commit)
 db/routes.js: POST /api/db/:label/sql/preview + POST /api/db/:label/sql/execute
 UI: Preview & Execute knop → tabel met resultaten → 30s countdown → Commit of Annuleer
 Enersee: popup "box geplaatst?" voor preview start
+
+Voeg dit toe onderaan de workfile:
+
+Sessie 27/05/2026 — toevoegingen:
+
+Multi-output naam fix: bij decoders met 2+ outputs krijgt elke asset ID een eigen naam veld in de UI
+Modbus client deduplicatie: elke decoder brengt eigen client mee (Waveshare RTU vs PAS800 TCP), gededupliceerd op naam
+PowerTag PAS800 TCP decoder toegevoegd aan lib/modbus
+LoRaWAN generator herschreven: entry node slim bepaald (Adeunis: Base64 to Hex), enkel formatter krijgt link out wires, interne wires bewaard
+Adeunis decoders gefixed: link out node toegevoegd, ASSET_ID_START_MET_36 → ASSET placeholder
+Meetpunt naam: alle varianten vervangen ({meetpunt naam}, {meetpunt}, Meetpunt, meetpunt) + suffix als geen placeholder aanwezig
+app.js fix: outputs detectie via formatter node ipv eerste function node
+generator/index.js fix: .js lib bestanden worden als JSON gelezen ipv via require()
+iothub template fix: node-redSTART → rechtstreeks naar DATABACKUP ipv via link in
+remapIds fix: n.broker en n.tls worden nu ook geremapped
+moonfish gateway meter MeterCategory: NULL → ''
+SQL preview/execute: BEGIN TRAN → preview → commit of annuleer, 30s timeout
