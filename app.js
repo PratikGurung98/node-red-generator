@@ -86,7 +86,68 @@ app.post('/api/iothub/login', async (req, res) => {
   });
 });
 
-// Generate flow + SQL
+// Asset Manager proxy (omzeilt CORS)
+const AM_BASE = 'https://assetmanagerapi-eucvc5gscng2ajfh.westeurope-01.azurewebsites.net';
+
+app.get('/api/assetmanager/search', async (req, res) => {
+  try {
+    const { search = '', page = 0, pageSize = 10 } = req.query;
+    const url = `${AM_BASE}/Api/v2/Asset/GetAssets?search=${encodeURIComponent(search)}&page=${page}&pageSize=${pageSize}`;
+    const r = await fetch(url);
+    const data = await r.json();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/assetmanager/asset/:id', async (req, res) => {
+  try {
+    const url = `${AM_BASE}/Api/v2/Asset/GetAsset?id=${encodeURIComponent(req.params.id)}`;
+    const r = await fetch(url);
+    const data = await r.json();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/assetmanager/create', async (req, res) => {
+  try {
+    const url = `${AM_BASE}/Api/v2/Asset/CreateAsset`;
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req.body)
+    });
+    const data = await r.json();
+    res.status(r.status).json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+app.post('/api/assetmanager/create-bulk', async (req, res) => {
+  const { assets } = req.body;
+  const results = [];
+  for (const asset of assets) {
+    try {
+      const url = `${AM_BASE}/Api/v2/Asset/CreateAsset`;
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(asset)
+      });
+      const data = await r.json();
+      results.push({ id: asset.id, ok: r.status === 200, data });
+    } catch (err) {
+      results.push({ id: asset.id, ok: false, error: err.message });
+    }
+  }
+  res.json({ results });
+});
+
 app.post('/api/generate', (req, res) => {
   try {
     // Hostname ophalen uit config op basis van geselecteerde IoT Hub

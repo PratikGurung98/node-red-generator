@@ -291,6 +291,36 @@
     </div>
   </div>
 
+  <!-- Asset Manager -->
+  <div class="section-title">Asset Manager</div>
+
+  <!-- Zoeken -->
+  <div class="card">
+    <label>Asset opzoeken</label>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <input type="text" id="amSearch" placeholder="Zoek op box naam, asset ID, serienummer..." style="flex:1;width:auto;min-width:0">
+      <button class="generate-btn" style="padding:8px 16px;font-size:13px;white-space:nowrap;width:auto;flex-shrink:0" onclick="amSearch()">Zoeken</button>
+    </div>
+    <div id="amStatus" style="min-height:18px;font-size:12px;color:#64748b"></div>
+    <div id="amResults" style="display:none;margin-top:12px">
+      <div style="font-size:11px;color:#64748b;margin-bottom:6px" id="amResultCount"></div>
+      <div id="amResultList" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+  </div>
+
+  <!-- Default assets knop -->
+  <div class="card">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button class="generate-btn" style="padding:10px 20px;font-size:13px;width:auto;flex-shrink:0" onclick="amGenerateDefaults()">🔧 Standaard Vlegelbox items</button>
+      <div style="font-size:12px;color:#64748b">Genereert de 4 standaard assets (VlegelBox, Gateway, Waveshare, AM103L) en vult de asset IDs in stap 3 in.</div>
+    </div>
+    <div id="amDefaultAssets" style="display:none;flex-direction:column;gap:10px;margin-top:14px"></div>
+    <div id="amDefaultActions" style="display:none;margin-top:14px;display:none;gap:10px;align-items:center">
+      <button class="generate-btn" style="padding:10px 20px;font-size:13px;width:auto;flex-shrink:0;background:#166534" onclick="amCreateDefaults()">📋 Aanmaken in Asset Manager</button>
+      <div id="amBulkStatus" style="font-size:12px;color:#64748b"></div>
+    </div>
+  </div>
+
   <!-- STAP 3: Box configuratie -->
   <div class="section-title"><span class="step-badge">3</span>Box configuratie</div>
   <div class="card">
@@ -305,7 +335,11 @@
       </div>
     </div>
     <label>Gateway Meter naam <span style="color:#374151;font-size:11px">(ReadableName in dbo.Meters)</span></label>
-    <input type="text" id="gatewayMeterNaam" placeholder="bv. Gateway UG56 BOX1">
+    <div style="display:flex;align-items:center;gap:0">
+      <span style="background:#1e2245;border:1px solid #2d3148;border-right:none;border-radius:6px 0 0 6px;padding:9px 12px;font-size:14px;color:#64748b;white-space:nowrap">Gateway_</span>
+      <input type="text" id="gatewayMeterNaamSuffix" placeholder="bv. Tongeren" style="border-radius:0 6px 6px 0;flex:1" oninput="syncGatewayMeterNaam()">
+      <input type="hidden" id="gatewayMeterNaam">
+    </div>
   </div>
 
   <!-- STAP 4: Devices -->
@@ -1288,6 +1322,267 @@
       status.innerHTML = `<span class="db-status err">Login fout: ${e.message}</span>`;
     }
   }
+
+  function syncGatewayMeterNaam() {
+    const suffix = document.getElementById('gatewayMeterNaamSuffix')?.value?.trim() || '';
+    const hidden = document.getElementById('gatewayMeterNaam');
+    if (hidden) hidden.value = suffix ? `Gateway_${suffix}` : '';
+  }
+
+  // ── Asset Manager ─────────────────────────────────────────────────────────
+
+  function generateAssetId(index = 0) {
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    const base = `3600${pad(now.getDate())}${pad(now.getMonth()+1)}${now.getFullYear()}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+    // Gebruik BigInt want 18 cijfers overschrijdt JS Number precisie
+    return String(BigInt(base) + BigInt(index));
+  }
+
+  // Default asset templates
+  const AM_DEFAULTS = [
+    {
+      key: 'vlegelbox',
+      label: 'BOX1',
+      name: 'VlegelBox',
+      typeNumber: 'VlegelBox',
+      pictureUrl: 'https://placehold.net/400x400.png',
+      fixedProps: [],
+      varProps: [{ name: 'Serial Number', value: '' }]
+    },
+    {
+      key: 'gateway',
+      label: 'GATEWAY',
+      name: 'Gateway',
+      typeNumber: 'Milesight UG56-L08GL-868M',
+      pictureUrl: 'https://botland.store/img/cms/23279_5.jpg',
+      fixedProps: [{ name: 'IP', value: '192.168.31.30' }],
+      varProps: [
+        { name: 'Serial Number', value: '' },
+        { name: 'SIM ICCID', value: '' },
+        { name: 'SIM IP', value: '' }
+      ]
+    },
+    {
+      key: 'waveshare',
+      label: 'WAVESHARE',
+      name: 'Waveshare',
+      typeNumber: 'Waveshare RS485 TO POE TCP/IP',
+      pictureUrl: 'https://www.waveshare.com/media/catalog/product/cache/1/image/800x800/9df78eab33525d08d6e5fb8d27136e95/r/s/rs485-to-eth-b-1.jpg',
+      fixedProps: [
+        { name: 'IP', value: '192.168.31.40' },
+        { name: 'MODBUS Serial Port Format', value: '9600 8N1' },
+        { name: 'Serial Number', value: 'N/A' }
+      ],
+      varProps: []
+    },
+    {
+      key: 'am103l',
+      label: 'O_IAQ_AM103L_LORA',
+      name: 'environment',
+      typeNumber: 'AM103-L-868M',
+      pictureUrl: 'https://cdn1.domadoo.fr/32706-large_default/milesight-lorawan-temp-hum-co2-luchtkwaliteitssensor-am103l.jpg',
+      fixedProps: [{ name: 'Password', value: '199825' }],
+      varProps: [
+        { name: 'Serial Number', value: '' },
+        { name: 'EUI', value: '' },
+        { name: 'APP KEY', value: '' }
+      ]
+    }
+  ];
+
+  // Render de default assets lijst — toont pas na klikken op knop
+  function amGenerateDefaults() {
+    const boxName = document.getElementById('boxName')?.value?.trim() || '';
+    const today = new Date().toISOString().split('T')[0];
+    const container = document.getElementById('amDefaultAssets');
+    const actions = document.getElementById('amDefaultActions');
+    if (!container) return;
+
+    container.innerHTML = '';
+    container.style.display = 'flex';
+    actions.style.display = 'flex';
+
+    // Genereer IDs nu (1 sec offset per asset)
+    const ids = AM_DEFAULTS.map((_, i) => generateAssetId(i));
+
+    // Vul stap 3 in: VlegelBox ID (index 0) en Gateway ID (index 1)
+    const gatewayAssetIdEl = document.getElementById('gatewayAssetId');
+    const gatewayMeterAssetIdEl = document.getElementById('gatewayMeterAssetId');
+    if (gatewayAssetIdEl) gatewayAssetIdEl.value = ids[0];
+    if (gatewayMeterAssetIdEl) gatewayMeterAssetIdEl.value = ids[1];
+
+    AM_DEFAULTS.forEach((tmpl, idx) => {
+      const card = document.createElement('div');
+      card.dataset.key = tmpl.key;
+      card.dataset.assetId = ids[idx];
+      card.style.cssText = 'background:#0f1117;border:1px solid #2d3148;border-radius:8px;padding:12px';
+      card.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div>
+            <span style="font-weight:600;color:#a5b4fc;font-size:13px">${tmpl.name}</span>
+            <span style="color:#64748b;font-size:11px;margin-left:8px">${tmpl.typeNumber}</span>
+            <span style="color:#374151;font-size:10px;margin-left:8px">ID: ${ids[idx]}</span>
+          </div>
+          <button onclick="amRemoveDefault('${tmpl.key}')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;padding:0 4px" title="Verwijderen">✕</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          <div>
+            <div style="font-size:10px;color:#64748b;margin-bottom:2px">Label</div>
+            <input type="text" value="${tmpl.label}" data-field="label" style="font-size:12px;padding:5px 8px;width:100%;box-sizing:border-box">
+          </div>
+          <div>
+            <div style="font-size:10px;color:#64748b;margin-bottom:2px">Name</div>
+            <input type="text" value="${tmpl.name}" data-field="name" style="font-size:12px;padding:5px 8px;width:100%;box-sizing:border-box">
+          </div>
+          ${tmpl.varProps.map(p => `
+          <div>
+            <div style="font-size:10px;color:#64748b;margin-bottom:2px">${p.name}</div>
+            <input type="text" value="${p.value}" data-field="var_${p.name}" placeholder="${p.name}..." style="font-size:12px;padding:5px 8px;width:100%;box-sizing:border-box">
+          </div>`).join('')}
+        </div>
+        ${tmpl.fixedProps.length ? `<div style="margin-top:8px;font-size:10px;color:#374151">${tmpl.fixedProps.map(p => `${p.name}: ${p.value}`).join(' · ')}</div>` : ''}
+        <div style="margin-top:6px;font-size:10px;color:#374151">Box/Project: ${boxName || '(boxnaam nog niet ingevuld)'} · Datum: ${today}</div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  function amRemoveDefault(key) {
+    const el = document.querySelector(`#amDefaultAssets [data-key="${key}"]`);
+    if (el) el.remove();
+  }
+
+  async function amCreateDefaults() {
+    const status = document.getElementById('amBulkStatus');
+    const boxName = document.getElementById('boxName')?.value?.trim();
+    const dbLabel = document.getElementById('dbSelect')?.options[document.getElementById('dbSelect').selectedIndex]?.text || '';
+    const customer = dbLabel.split(' ')[0];
+    const today = new Date().toISOString().split('T')[0];
+
+    if (!boxName) { status.innerHTML = '<span style="color:#f87171">Vul eerst de box naam in.</span>'; return; }
+
+    const cards = document.querySelectorAll('#amDefaultAssets [data-key]');
+    if (!cards.length) { status.textContent = 'Geen assets om aan te maken.'; return; }
+
+    status.textContent = 'Aanmaken...';
+
+    const assets = [];
+    let offset = 0;
+
+    cards.forEach(card => {
+      const get = field => card.querySelector(`[data-field="${field}"]`)?.value?.trim() || '';
+      const key = card.dataset.key;
+      const tmpl = AM_DEFAULTS.find(t => t.key === key);
+      if (!tmpl) return;
+
+      const id = card.dataset.assetId;
+      const props = [
+        { property: { name: 'Name',         dataType: 0, isPublic: true,  isForced: true  }, value: get('name') || tmpl.name },
+        { property: { name: 'Label',        dataType: 0, isPublic: true,  isForced: true  }, value: get('label') || tmpl.label },
+        { property: { name: 'Customer',     dataType: 0, isPublic: false, isForced: true  }, value: customer },
+        { property: { name: 'Project',      dataType: 0, isPublic: false, isForced: true  }, value: boxName },
+        { property: { name: 'Box',          dataType: 0, isPublic: true,  isForced: false }, value: boxName },
+        { property: { name: 'Picture URL',  dataType: 5, isPublic: true,  isForced: true  }, value: tmpl.pictureUrl },
+        { property: { name: 'Installation Date', dataType: 1, isPublic: false, isForced: true }, value: today },
+        { property: { name: 'Warranty Date',     dataType: 1, isPublic: true,  isForced: true }, value: today },
+        { property: { name: 'Type Number',       dataType: 3, isPublic: true,  isForced: true }, value: tmpl.typeNumber },
+      ];
+
+      // Variabele properties
+      tmpl.varProps.forEach(vp => {
+        const val = get(`var_${vp.name}`);
+        if (val) props.push({ property: { name: vp.name, dataType: 0, isPublic: vp.name !== 'APP KEY' && vp.name !== 'Password', isForced: false }, value: val });
+      });
+
+      // Vaste extra properties
+      tmpl.fixedProps.forEach(fp => {
+        props.push({ property: { name: fp.name, dataType: 0, isPublic: true, isForced: false }, value: fp.value });
+      });
+
+      assets.push({ id, properties: props });
+    });
+
+    try {
+      const res = await fetch('/api/assetmanager/create-bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assets })
+      });
+      const data = await res.json();
+      const ok = data.results.filter(r => r.ok).length;
+      const fail = data.results.filter(r => !r.ok);
+      if (fail.length === 0) {
+        status.innerHTML = `<span style="color:#4ade80">✅ ${ok} assets aangemaakt!</span>`;
+      } else {
+        const failIds = fail.map(r => `${r.id}: ${JSON.stringify(r.data)}`).join(', ');
+        status.innerHTML = `<span style="color:#fb923c">⚠️ ${ok} ok, ${fail.length} mislukt: ${failIds}</span>`;
+      }
+    } catch (e) {
+      status.innerHTML = `<span style="color:#f87171">❌ ${e.message}</span>`;
+    }
+  }
+
+  async function amSearch() {
+    const q      = document.getElementById('amSearch').value.trim();
+    const status = document.getElementById('amStatus');
+    const results = document.getElementById('amResults');
+    const list   = document.getElementById('amResultList');
+    const count  = document.getElementById('amResultCount');
+
+    if (!q) { status.textContent = 'Vul een zoekterm in.'; return; }
+
+    status.textContent = 'Zoeken...';
+    results.style.display = 'none';
+    list.innerHTML = '';
+
+    try {
+      const res  = await fetch(`/api/assetmanager/search?search=${encodeURIComponent(q)}&pageSize=10`);
+      const data = await res.json();
+
+      status.textContent = '';
+      count.textContent  = `${data.totalCount} assets gevonden (toont ${data.items?.length || 0})`;
+      results.style.display = 'block';
+
+      if (!data.items?.length) {
+        list.innerHTML = '<div style="color:#64748b;font-size:13px">Geen resultaten.</div>';
+        return;
+      }
+
+      data.items.forEach(asset => {
+        const getName  = p => asset.properties?.find(x => x.name === p)?.value || '—';
+        const card = document.createElement('div');
+        card.style.cssText = 'background:#0f1117;border:1px solid #2d3148;border-radius:8px;padding:12px;font-size:13px';
+        card.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <span style="font-weight:600;color:#a5b4fc">${asset.id}</span>
+            <span style="color:#64748b;font-size:11px">${getName('Type Number')}</span>
+          </div>
+          <div style="color:#d4d4d4;margin-bottom:4px">${getName('Name')} — <span style="color:#94a3b8">${getName('Box')}</span></div>
+          <div style="color:#64748b;font-size:11px">SN: ${getName('Serial Number')} | Customer: ${getName('Customer')}</div>
+          <details style="margin-top:8px">
+            <summary style="cursor:pointer;color:#64748b;font-size:11px">Alle properties (${asset.properties?.length || 0})</summary>
+            <div style="margin-top:8px;display:flex;flex-direction:column;gap:3px">
+              ${(asset.properties || []).map(p =>
+                `<div style="display:flex;gap:8px;font-size:11px">
+                  <span style="color:#64748b;min-width:140px">${p.name}</span>
+                  <span style="color:#d4d4d4">${p.value || '—'}</span>
+                </div>`
+              ).join('')}
+            </div>
+          </details>`;
+        list.appendChild(card);
+      });
+
+    } catch (e) {
+      status.innerHTML = `<span style="color:#f87171">Fout: ${e.message}</span>`;
+    }
+  }
+
+  document.getElementById('amSearch').addEventListener('keydown', e => {
+    if (e.key === 'Enter') amSearch();
+  });
+
 
   // Start
   init();
