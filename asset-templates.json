@@ -1,457 +1,711 @@
 {
   "_comment": "NOOIT VERVANGEN — eigen configuratie. Prefix matching: sleutel is prefix van decoder naam (zonder versie).",
-
   "E_630ML1_DRAG_LORA": {
     "assets": [
       {
         "role": "communicating",
         "typeNumber": "Dragino RS485-LB",
         "pictureUrl": "https://www.robotshop.com/cdn/shop/files/dragino_rs485w_lb_lorawan_rs485w_iot_converter_850_2_16e6b9a9-9236-4661-b772-8db60e65a67d.webp",
-        "varProps": ["Serial Number", "EUI", "APP KEY", "Password"]
+        "varProps": [
+          "Serial Number",
+          "EUI",
+          "APP KEY",
+          "Password"
+        ],
+        "printCount": 2
       },
       {
         "role": "dumb",
         "typeNumber": "Eastron SDM630MCT-ML-1L-MID",
         "pictureUrl": "https://www.controlin.com/wp-content/uploads/2023/08/sdm72d-m-2-mid-energiemeters-eastron-afb1-2023.png",
-        "varProps": ["Serial Number", "Fases", "Label", "Name", "TA"]
+        "varProps": [
+          "Serial Number",
+          "Fases",
+          "TA"
+        ],
+        "printCount": 5
       }
     ]
   },
-
   "E_630ML4_DRAG_LORA": {
     "assets": [
       {
         "role": "communicating",
         "typeNumber": "Dragino RS485-LB",
         "pictureUrl": "https://www.robotshop.com/cdn/shop/files/dragino_rs485w_lb_lorawan_rs485w_iot_converter_850_2_16e6b9a9-9236-4661-b772-8db60e65a67d.webp",
-        "varProps": ["Serial Number", "EUI", "APP KEY", "Password"]
+        "varProps": [
+          "Serial Number",
+          "EUI",
+          "APP KEY",
+          "Password"
+        ],
+        "printCount": 2
       },
       {
         "role": "dumb",
         "typeNumber": "Eastron SDM630MCT-ML-4",
         "pictureUrl": "https://www.controlin.com/wp-content/uploads/2023/08/sdm72d-m-2-mid-energiemeters-eastron-afb1-2023.png",
-        "varProps": ["Serial Number", "Fases", "Label", "Name", "TA"]
+        "varProps": [
+          "Serial Number",
+          "Fases",
+          "TA"
+        ],
+        "printCount": 5
       }
     ]
   },
-
   "E_630ML4_DRAG_LORA_2DEVICES": {
     "assets": [
       {
         "role": "communicating",
         "typeNumber": "Dragino RS485-LB",
         "pictureUrl": "https://www.robotshop.com/cdn/shop/files/dragino_rs485w_lb_lorawan_rs485w_iot_converter_850_2_16e6b9a9-9236-4661-b772-8db60e65a67d.webp",
-        "varProps": ["Serial Number", "EUI", "APP KEY", "Password"]
+        "varProps": [
+          "Serial Number",
+          "EUI",
+          "APP KEY",
+          "Password"
+        ],
+        "printCount": 2
       },
       {
         "role": "dumb",
         "typeNumber": "Eastron SDM630MCT-ML-4",
         "pictureUrl": "https://www.controlin.com/wp-content/uploads/2023/08/sdm72d-m-2-mid-energiemeters-eastron-afb1-2023.png",
-        "varProps": ["Serial Number", "Fases", "Label", "Name", "TA"],
-        "outputIndex": 1
+        "varProps": [
+          "Serial Number",
+          "Fases",
+          "TA"
+        ],
+        "outputIndex": 1,
+        "printCount": 5
       },
       {
         "role": "dumb",
         "typeNumber": "Eastron SDM630MCT-ML-4",
         "pictureUrl": "https://www.controlin.com/wp-content/uploads/2023/08/sdm72d-m-2-mid-energiemeters-eastron-afb1-2023.png",
-        "varProps": ["Serial Number", "Fases", "Label", "Name", "TA"],
-        "outputIndex": 2
+        "varProps": [
+          "Serial Number",
+          "Fases",
+          "TA"
+        ],
+        "outputIndex": 2,
+        "printCount": 5
       }
     ]
   },
-
   "E_630ML4_DRAG_LORA_3DEVICES": {
     "assets": [
       {
         "role": "communicating",
         "typeNumber": "Dragino RS485-LB",
         "pictureUrl": "https://www.robotshop.com/cdn/shop/files/dragino_rs485w_lb_lorawan_rs485w_iot_converter_850_2_16e6b9a9-9236-4661-b772-8db60e65a67d.webp",
-        "varProps": ["Serial Number", "EUI", "APP KEY", "Password"]
+        "varProps": [
+          "Serial Number",
+          "EUI",
+          "APP KEY",
+          "Password"
+        ],
+        "printCount": 2
       },
       {
         "role": "dumb",
         "typeNumber": "Eastron SDM630MCT-ML-4",
         "pictureUrl": "https://www.controlin.com/wp-content/uploads/2023/08/sdm72d-m-2-mid-energiemeters-eastron-afb1-2023.png",
-        "varProps": ["Serial Number", "Fases", "Label", "Name", "TA"],
-        "outputIndex": 1
+        "varProps": [
+          "Serial Number",
+          "Fases",
+          "TA"
+        ],
+        "outputIndex": 1,
+        "printCount": 5
       },
       {
         "role": "dumb",
         "typeNumber": "Eastron SDM630MCT-ML-4",
         "pictureUrl": "https://www.controlin.com/wp-content/uploads/2023/08/sdm72d-m-2-mid-energiemeters-eastron-afb1-2023.png",
-        "varProps": ["Serial Number", "Fases", "Label", "Name", "TA"],
-        "outputIndex": 2
+        "varProps": [
+          "Serial Number",
+          "Fases",
+          "TA"
+        ],
+        "outputIndex": 2,
+        "printCount": 5
       },
       {
         "role": "dumb",
         "typeNumber": "Eastron SDM630MCT-ML-4",
         "pictureUrl": "https://www.controlin.com/wp-content/uploads/2023/08/sdm72d-m-2-mid-energiemeters-eastron-afb1-2023.png",
-        "varProps": ["Serial Number", "Fases", "Label", "Name", "TA"],
-        "outputIndex": 3
+        "varProps": [
+          "Serial Number",
+          "Fases",
+          "TA"
+        ],
+        "outputIndex": 3,
+        "printCount": 5
       }
     ]
   },
-
   "E_630ROG_DRAG_LORA": {
     "assets": [
       {
         "role": "communicating",
         "typeNumber": "Dragino RS485-LB",
         "pictureUrl": "https://www.robotshop.com/cdn/shop/files/dragino_rs485w_lb_lorawan_rs485w_iot_converter_850_2_16e6b9a9-9236-4661-b772-8db60e65a67d.webp",
-        "varProps": ["Serial Number", "EUI", "APP KEY", "Password"]
+        "varProps": [
+          "Serial Number",
+          "EUI",
+          "APP KEY",
+          "Password"
+        ],
+        "printCount": 2
       },
       {
         "role": "dumb",
         "typeNumber": "Eastron SDM630MCT-RC",
         "pictureUrl": "https://www.eastrongroup.com/eastrongroup/2024/10/14/sdm630mct-rc.jpg",
-        "varProps": ["Serial Number", "Fases", "Label", "Name", "RC", "TA"]
+        "varProps": [
+          "Serial Number",
+          "Fases",
+          "RC",
+          "TA"
+        ],
+        "printCount": 6
       }
     ]
   },
-
   "E_630ROG_EM300_LORA": {
     "assets": [
       {
         "role": "communicating",
         "typeNumber": "Milesight EM300-DI",
         "pictureUrl": "https://airteq.eu/wp-content/uploads/2023/05/milesight-em300-di-lorawan-sensor-front-2-kopie.webp",
-        "varProps": ["Serial Number", "EUI", "APP KEY", "Password"]
+        "varProps": [
+          "Serial Number",
+          "EUI",
+          "APP KEY",
+          "Password"
+        ],
+        "printCount": 2
       },
       {
         "role": "dumb",
         "typeNumber": "Eastron SDM630MCT-RC",
         "pictureUrl": "https://www.eastrongroup.com/eastrongroup/2024/10/14/sdm630mct-rc.jpg",
-        "varProps": ["Serial Number", "Fases", "Label", "Name", "RC", "TA"]
+        "varProps": [
+          "Serial Number",
+          "Fases",
+          "RC",
+          "TA"
+        ],
+        "printCount": 6
       }
     ]
   },
-
   "E_SDM72DM_DRAG_LORA": {
     "assets": [
       {
         "role": "communicating",
         "typeNumber": "Dragino RS485-LB",
         "pictureUrl": "https://www.robotshop.com/cdn/shop/files/dragino_rs485w_lb_lorawan_rs485w_iot_converter_850_2_16e6b9a9-9236-4661-b772-8db60e65a67d.webp",
-        "varProps": ["Serial Number", "EUI", "APP KEY", "Password"]
+        "varProps": [
+          "Serial Number",
+          "EUI",
+          "APP KEY",
+          "Password"
+        ],
+        "printCount": 2
       },
       {
         "role": "dumb",
         "typeNumber": "SDM72D-M-2",
         "pictureUrl": "https://www.controlin.com/wp-content/uploads/2023/08/sdm72d-m-2-mid-energiemeters-eastron-afb1-2023.png",
-        "varProps": ["Serial Number", "Fases", "Kanaal", "Label", "Name"]
+        "varProps": [
+          "Serial Number",
+          "Fases",
+          "Kanaal"
+        ],
+        "printCount": 5
       }
     ]
   },
-
   "SDM72MD2_DRAG_LORA": {
     "assets": [
       {
         "role": "communicating",
         "typeNumber": "Dragino RS485-LB",
         "pictureUrl": "https://www.robotshop.com/cdn/shop/files/dragino_rs485w_lb_lorawan_rs485w_iot_converter_850_2_16e6b9a9-9236-4661-b772-8db60e65a67d.webp",
-        "varProps": ["Serial Number", "EUI", "APP KEY", "Password"]
+        "varProps": [
+          "Serial Number",
+          "EUI",
+          "APP KEY",
+          "Password"
+        ],
+        "printCount": 2
       },
       {
         "role": "dumb",
         "typeNumber": "SDM72D-M-2",
         "pictureUrl": "https://www.controlin.com/wp-content/uploads/2023/08/sdm72d-m-2-mid-energiemeters-eastron-afb1-2023.png",
-        "varProps": ["Serial Number", "Fases", "Kanaal", "Label", "Name"]
+        "varProps": [
+          "Serial Number",
+          "Fases",
+          "Kanaal"
+        ],
+        "printCount": 5
       }
     ]
   },
-
   "E_IEM3255_DRAG_LORA": {
     "assets": [
       {
         "role": "communicating",
         "typeNumber": "Dragino RS485-LB",
         "pictureUrl": "https://www.robotshop.com/cdn/shop/files/dragino_rs485w_lb_lorawan_rs485w_iot_converter_850_2_16e6b9a9-9236-4661-b772-8db60e65a67d.webp",
-        "varProps": ["Serial Number", "EUI", "APP KEY", "Password"]
+        "varProps": [
+          "Serial Number",
+          "EUI",
+          "APP KEY",
+          "Password"
+        ],
+        "printCount": 2
       }
     ]
   },
-
   "E_PM5300_DRAG_LORA": {
     "assets": [
       {
         "role": "communicating",
         "typeNumber": "Dragino RS485-LB",
         "pictureUrl": "https://www.robotshop.com/cdn/shop/files/dragino_rs485w_lb_lorawan_rs485w_iot_converter_850_2_16e6b9a9-9236-4661-b772-8db60e65a67d.webp",
-        "varProps": ["Serial Number", "EUI", "APP KEY", "Password"]
+        "varProps": [
+          "Serial Number",
+          "EUI",
+          "APP KEY",
+          "Password"
+        ],
+        "printCount": 2
       }
     ]
   },
-
   "E_A1MB_DRAG_LORA": {
     "assets": [
       {
         "role": "communicating",
         "typeNumber": "Dragino RS485-LB",
         "pictureUrl": "https://www.robotshop.com/cdn/shop/files/dragino_rs485w_lb_lorawan_rs485w_iot_converter_850_2_16e6b9a9-9236-4661-b772-8db60e65a67d.webp",
-        "varProps": ["Serial Number", "EUI", "APP KEY", "Password"]
+        "varProps": [
+          "Serial Number",
+          "EUI",
+          "APP KEY",
+          "Password"
+        ],
+        "printCount": 2
       }
     ]
   },
-
   "H_MULTICAL603_DRAG_LORA": {
     "assets": [
       {
         "role": "communicating",
         "typeNumber": "Dragino RS485-LB",
         "pictureUrl": "https://www.robotshop.com/cdn/shop/files/dragino_rs485w_lb_lorawan_rs485w_iot_converter_850_2_16e6b9a9-9236-4661-b772-8db60e65a67d.webp",
-        "varProps": ["Serial Number", "EUI", "APP KEY", "Password"]
+        "varProps": [
+          "Serial Number",
+          "EUI",
+          "APP KEY",
+          "Password"
+        ],
+        "printCount": 2
       }
     ]
   },
-
   "E_DRY_EM300_LORA": {
     "assets": [
       {
         "role": "communicating",
         "typeNumber": "Milesight EM300-DI",
         "pictureUrl": "https://airteq.eu/wp-content/uploads/2023/05/milesight-em300-di-lorawan-sensor-front-2-kopie.webp",
-        "varProps": ["Serial Number", "EUI", "APP KEY", "Password"]
+        "varProps": [
+          "Serial Number",
+          "EUI",
+          "APP KEY",
+          "Password"
+        ],
+        "printCount": 2
       }
     ]
   },
-
   "G_DRY_EM300_LORA": {
     "assets": [
       {
         "role": "communicating",
         "typeNumber": "Milesight EM300-DI",
         "pictureUrl": "https://airteq.eu/wp-content/uploads/2023/05/milesight-em300-di-lorawan-sensor-front-2-kopie.webp",
-        "varProps": ["Serial Number", "EUI", "APP KEY", "Password"]
+        "varProps": [
+          "Serial Number",
+          "EUI",
+          "APP KEY",
+          "Password"
+        ],
+        "printCount": 2
       }
     ]
   },
-
   "W_DRY_EM300_LORA": {
     "assets": [
       {
         "role": "communicating",
         "typeNumber": "Milesight EM300-DI",
         "pictureUrl": "https://airteq.eu/wp-content/uploads/2023/05/milesight-em300-di-lorawan-sensor-front-2-kopie.webp",
-        "varProps": ["Serial Number", "EUI", "APP KEY", "Password"]
+        "varProps": [
+          "Serial Number",
+          "EUI",
+          "APP KEY",
+          "Password"
+        ],
+        "printCount": 2
       }
     ]
   },
-
   "D_LEAK_EM300_LORA": {
     "assets": [
       {
         "role": "communicating",
         "typeNumber": "Milesight EM300-DI",
         "pictureUrl": "https://airteq.eu/wp-content/uploads/2023/05/milesight-em300-di-lorawan-sensor-front-2-kopie.webp",
-        "varProps": ["Serial Number", "EUI", "APP KEY", "Password"]
+        "varProps": [
+          "Serial Number",
+          "EUI",
+          "APP KEY",
+          "Password"
+        ],
+        "printCount": 2
       }
     ]
   },
-
   "D_POS_EM300_LORA": {
     "assets": [
       {
         "role": "communicating",
         "typeNumber": "Milesight EM300-DI",
         "pictureUrl": "https://airteq.eu/wp-content/uploads/2023/05/milesight-em300-di-lorawan-sensor-front-2-kopie.webp",
-        "varProps": ["Serial Number", "EUI", "APP KEY", "Password"]
+        "varProps": [
+          "Serial Number",
+          "EUI",
+          "APP KEY",
+          "Password"
+        ],
+        "printCount": 2
       }
     ]
   },
-
   "O_TEMP_EM300_LORA": {
     "assets": [
       {
         "role": "communicating",
         "typeNumber": "Milesight EM300-DI",
         "pictureUrl": "https://airteq.eu/wp-content/uploads/2023/05/milesight-em300-di-lorawan-sensor-front-2-kopie.webp",
-        "varProps": ["Serial Number", "EUI", "APP KEY", "Password"]
+        "varProps": [
+          "Serial Number",
+          "EUI",
+          "APP KEY",
+          "Password"
+        ],
+        "printCount": 2
       }
     ]
   },
-
   "H_MC403TH_EM300_LORA": {
     "assets": [
       {
         "role": "communicating",
         "typeNumber": "Milesight EM300-DI",
         "pictureUrl": "https://airteq.eu/wp-content/uploads/2023/05/milesight-em300-di-lorawan-sensor-front-2-kopie.webp",
-        "varProps": ["Serial Number", "EUI", "APP KEY", "Password"]
+        "varProps": [
+          "Serial Number",
+          "EUI",
+          "APP KEY",
+          "Password"
+        ],
+        "printCount": 2
       }
     ]
   },
-
   "D_LEVEL_EM500UDL_LORA": {
     "assets": [
       {
         "role": "communicating",
         "typeNumber": "Milesight EM500-UDL",
         "pictureUrl": "https://airteq.eu/wp-content/uploads/2023/05/milesight-em300-di-lorawan-sensor-front-2-kopie.webp",
-        "varProps": ["Serial Number", "EUI", "APP KEY", "Password"]
+        "varProps": [
+          "Serial Number",
+          "EUI",
+          "APP KEY",
+          "Password"
+        ],
+        "printCount": 2
       }
     ]
   },
-
   "O_IAQ_AM103L_LORA": {
     "assets": [
       {
         "role": "communicating",
         "typeNumber": "AM103-L-868M",
         "pictureUrl": "https://cdn1.domadoo.fr/32706-large_default/milesight-lorawan-temp-hum-co2-luchtkwaliteitssensor-am103l.jpg",
-        "fixedProps": [{ "name": "Password", "value": "199825" }],
-        "varProps": ["Serial Number", "EUI", "APP KEY"]
+        "fixedProps": [
+          {
+            "name": "Password",
+            "value": "199825"
+          }
+        ],
+        "varProps": [
+          "Serial Number",
+          "EUI",
+          "APP KEY"
+        ],
+        "printCount": 2
       }
     ]
   },
-
   "O_IAQ_AM307_LORA": {
     "assets": [
       {
         "role": "communicating",
         "typeNumber": "AM307",
         "pictureUrl": "https://cdn1.domadoo.fr/32706-large_default/milesight-lorawan-temp-hum-co2-luchtkwaliteitssensor-am103l.jpg",
-        "fixedProps": [{ "name": "Password", "value": "199825" }],
-        "varProps": ["Serial Number", "EUI", "APP KEY"]
+        "fixedProps": [
+          {
+            "name": "Password",
+            "value": "199825"
+          }
+        ],
+        "varProps": [
+          "Serial Number",
+          "EUI",
+          "APP KEY"
+        ],
+        "printCount": 2
       }
     ]
   },
-
   "G_PNP_ADEU_LORA": {
     "assets": [
       {
         "role": "communicating",
         "typeNumber": "Adeunis ARF8230FA",
         "pictureUrl": "https://industry-electronics.de/lieske_1784824-o-adeunis-arf8230fa-b01.jpg",
-        "varProps": ["Serial Number", "EUI", "APP KEY", "Password"]
+        "varProps": [
+          "Serial Number",
+          "EUI",
+          "APP KEY",
+          "Password"
+        ],
+        "printCount": 2
       }
     ]
   },
-
   "W_PNP_ADEU_LORA": {
     "assets": [
       {
         "role": "communicating",
         "typeNumber": "Adeunis ARF8230FA",
         "pictureUrl": "https://industry-electronics.de/lieske_1784824-o-adeunis-arf8230fa-b01.jpg",
-        "varProps": ["Serial Number", "EUI", "APP KEY", "Password"]
+        "varProps": [
+          "Serial Number",
+          "EUI",
+          "APP KEY",
+          "Password"
+        ],
+        "printCount": 2
       }
     ]
   },
-
   "G_FLASHO_LORA": {
     "assets": [
       {
         "role": "communicating",
         "typeNumber": "Watteco Flash'o",
         "pictureUrl": "https://www.watteco.com/wp-content/uploads/2020/05/FlashO-1.jpg",
-        "varProps": ["Serial Number", "EUI", "APP KEY", "Password"]
+        "varProps": [
+          "Serial Number",
+          "EUI",
+          "APP KEY",
+          "Password"
+        ],
+        "printCount": 2
       }
     ]
   },
-
   "G_OPT_FM432_LORA": {
     "assets": [
       {
         "role": "communicating",
         "typeNumber": "FM432g_ap_15mn",
         "pictureUrl": "https://www.fludia.com/wp-content/uploads/2025/05/FM432g-n-1.png",
-        "varProps": ["Serial Number", "EUI", "APP KEY", "Port"]
+        "varProps": [
+          "Serial Number",
+          "EUI",
+          "APP KEY",
+          "Port"
+        ],
+        "printCount": 2
       }
     ]
   },
-
   "E_LHI110_LORA": {
     "assets": [
       {
         "role": "communicating",
         "typeNumber": "lhi110",
         "pictureUrl": "https://placehold.net/400x400.png",
-        "varProps": ["Serial Number", "EUI", "APP KEY", "Password"]
+        "varProps": [
+          "Serial Number",
+          "EUI",
+          "APP KEY",
+          "Password"
+        ],
+        "printCount": 2
       }
     ]
   },
-
   "E_SCT_CT303_LORA": {
     "assets": [
       {
         "role": "communicating",
         "typeNumber": "CT303-868M",
         "pictureUrl": "https://placehold.net/400x400.png",
-        "varProps": ["Serial Number", "EUI"]
+        "varProps": [
+          "Serial Number",
+          "EUI"
+        ],
+        "printCount": 2
       }
     ]
   },
-
   "W_BME_HYDRO_LORA": {
     "assets": [
       {
         "role": "communicating",
         "typeNumber": "HYDRODIGIT-S1",
         "pictureUrl": "https://placehold.net/400x400.png",
-        "varProps": ["Serial Number", "EUI", "APP KEY", "Password"]
+        "varProps": [
+          "Serial Number",
+          "EUI",
+          "APP KEY",
+          "Password"
+        ],
+        "printCount": 2
       }
     ]
   },
-
   "DEUR_Dragino_LDS03A": {
     "assets": [
       {
         "role": "communicating",
         "typeNumber": "Dragino LDS03A",
         "pictureUrl": "https://placehold.net/400x400.png",
-        "varProps": ["Serial Number", "EUI", "APP KEY", "Password"]
+        "varProps": [
+          "Serial Number",
+          "EUI",
+          "APP KEY",
+          "Password"
+        ],
+        "printCount": 2
       }
     ]
   },
-
   "S_DRY_IO_DRAG_LORA": {
     "assets": [
       {
         "role": "communicating",
         "typeNumber": "Dragino LT22222",
         "pictureUrl": "https://placehold.net/400x400.png",
-        "varProps": ["Serial Number", "EUI", "APP KEY", "Password"]
+        "varProps": [
+          "Serial Number",
+          "EUI",
+          "APP KEY",
+          "Password"
+        ],
+        "printCount": 2
       }
     ]
   },
-
   "E_630ML1_WAVE_TCP": {
     "assets": [
       {
         "role": "communicating",
         "typeNumber": "Eastron SDM630MCT-ML-1L-MID",
         "pictureUrl": "https://www.controlin.com/wp-content/uploads/2023/08/sdm72d-m-2-mid-energiemeters-eastron-afb1-2023.png",
-        "fixedProps": [{ "name": "MODBUS Serial Port Format", "value": "9600 8N1" }],
-        "varProps": ["Serial Number", "Fases", "Modbus Adres", "Label", "Name", "TA"]
+        "fixedProps": [
+          {
+            "name": "MODBUS Serial Port Format",
+            "value": "9600 8N1"
+          }
+        ],
+        "varProps": [
+          "Serial Number",
+          "Fases",
+          "Modbus Adres",
+          "TA"
+        ],
+        "printCount": 5
       }
     ]
   },
-
   "E_630ML4_WAVE_TCP": {
     "assets": [
       {
         "role": "communicating",
         "typeNumber": "Eastron SDM630MCT-ML-4",
         "pictureUrl": "https://www.controlin.com/wp-content/uploads/2023/08/sdm72d-m-2-mid-energiemeters-eastron-afb1-2023.png",
-        "fixedProps": [{ "name": "MODBUS Serial Port Format", "value": "9600 8N1" }],
-        "varProps": ["Serial Number", "Fases", "Modbus Adres", "Label", "Name", "TA"]
+        "fixedProps": [
+          {
+            "name": "MODBUS Serial Port Format",
+            "value": "9600 8N1"
+          }
+        ],
+        "varProps": [
+          "Serial Number",
+          "Fases",
+          "Modbus Adres",
+          "TA"
+        ],
+        "printCount": 5
       }
     ]
   },
-
   "E_630ROG_WAVE_TCP": {
     "assets": [
       {
         "role": "communicating",
         "typeNumber": "Eastron SDM630MCT-RC",
         "pictureUrl": "https://www.eastrongroup.com/eastrongroup/2024/10/14/sdm630mct-rc.jpg",
-        "fixedProps": [{ "name": "MODBUS Serial Port Format", "value": "9600 8N1" }],
-        "varProps": ["Serial Number", "Fases", "Modbus Adres", "Label", "Name", "RC", "TA"]
+        "fixedProps": [
+          {
+            "name": "MODBUS Serial Port Format",
+            "value": "9600 8N1"
+          }
+        ],
+        "varProps": [
+          "Serial Number",
+          "Fases",
+          "Modbus Adres",
+          "RC",
+          "TA"
+        ],
+        "printCount": 6
       }
     ]
   },
-
-  "E_POWERTAG_PAS800_TCP": { "assets": [] },
-  "H_MULTICAL603_WAVE_TCP": { "assets": [] },
-  "H_SC5I_WAVE_TCP": { "assets": [] }
+  "E_POWERTAG_PAS800_TCP": {
+    "assets": []
+  },
+  "H_MULTICAL603_WAVE_TCP": {
+    "assets": []
+  },
+  "H_SC5I_WAVE_TCP": {
+    "assets": []
+  }
 }

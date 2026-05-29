@@ -293,10 +293,10 @@ return msg;`,
     ) || decoderNodes[0];
     const entryId = entryNode.id;
 
-    // Formatter = function met ASSET/PLACEHOLDER, geen Base64/catch/error/parse
+    // Formatter = function met ASSET/PLACEHOLDER/BEGINT, geen Base64/catch/error/parse
     const formatter = decoderNodes.find(n =>
       n.type === 'function' &&
-      (n.func?.includes('ASSET') || n.func?.includes('PLACEHOLDER')) &&
+      (n.func?.includes('ASSET') || n.func?.includes('PLACEHOLDER') || n.func?.includes('BEGINT')) &&
       !n.name?.toLowerCase().includes('base64') &&
       !n.name?.toLowerCase().includes('catch') &&
       !n.name?.toLowerCase().includes('error') &&

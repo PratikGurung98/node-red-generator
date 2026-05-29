@@ -349,8 +349,9 @@
   <div class="card">
     <div id="amDefaultAssets" style="flex-direction:column;gap:10px;display:none"></div>
     <div id="amEmptyMsg" style="font-size:12px;color:#374151">Klik op "Standaard Vlegelbox items" of voeg devices toe om assets voor te bereiden.</div>
-    <div id="amDefaultActions" style="margin-top:14px;gap:10px;align-items:center;display:none">
+    <div id="amDefaultActions" style="margin-top:14px;gap:10px;align-items:center;display:none;flex-wrap:wrap">
       <button class="generate-btn" style="padding:10px 20px;font-size:13px;width:auto;flex-shrink:0;background:#166534" onclick="amCreateDefaults()">📋 Aanmaken in Asset Manager</button>
+      <button class="generate-btn" style="padding:10px 20px;font-size:13px;width:auto;flex-shrink:0;background:#1e3a5f" onclick="amPrintAll()">🖨️ Print Vlegelbox</button>
       <div id="amBulkStatus" style="font-size:12px;color:#64748b"></div>
     </div>
   </div>
@@ -579,7 +580,8 @@
         </div>
         <div>
           <label>${identifierLabel}</label>
-          <input type="text" name="${identifierName}" placeholder="${identifierPlaceholder}">
+          <input type="text" name="${identifierName}" placeholder="${identifierPlaceholder}"
+            oninput="amSyncDeviceField(${idx}, '${identifierName}', this.value)">
         </div>
         <div class="full" id="naam-single-${idx}">
           <label>Meetpunt naam <span style="color:#374151;font-size:11px">(vervangt {meetpunt naam})</span></label>
@@ -846,9 +848,7 @@
 
   function amGenerateDeviceCards(deviceIdx) {
     const decoderName = document.getElementById(`decoder-val-${deviceIdx}`)?.value?.trim();
-    console.log('[AM] amGenerateDeviceCards called', deviceIdx, decoderName);
     const tmpl = amFindTemplate(decoderName);
-    console.log('[AM] template found:', tmpl);
 
     // Verwijder oude cards voor dit device
     document.querySelectorAll(`[data-device-idx="${deviceIdx}"]`).forEach(el => el.remove());
@@ -882,7 +882,11 @@
             ${roleLabel}
             <span style="color:#374151;font-size:10px;margin-left:8px">ID: ${id}</span>
           </div>
-          <button onclick="amRemoveDefault('device_${deviceIdx}_${assetIdx}')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;padding:0 4px">✕</button>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:10px;color:#64748b">×</span>
+            <input type="number" data-field="printCount" value="${asset.printCount || 2}" min="0" max="99" style="width:40px;font-size:12px;padding:3px 5px;text-align:center;box-sizing:border-box">
+            <button onclick="amRemoveDefault('device_${deviceIdx}_${assetIdx}')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;padding:0 4px">✕</button>
+          </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
           <div>
@@ -1434,6 +1438,68 @@
     if (hidden) hidden.value = suffix ? `Gateway_${suffix}` : '';
   }
 
+  // Sync DevEUI / Modbus Adres van device naar asset manager card
+  function amSyncDeviceField(deviceIdx, fieldName, value) {
+    const cards = document.querySelectorAll(`[data-device-idx="${deviceIdx}"]`);
+    cards.forEach(card => {
+      if (fieldName === 'deveui') {
+        const euiInput = card.querySelector('[data-field="var_EUI"]');
+        if (euiInput) euiInput.value = value;
+      } else if (fieldName === 'slaveAddress') {
+        const mbInput = card.querySelector('[data-field="var_Modbus Adres"]');
+        if (mbInput) mbInput.value = value;
+      }
+    });
+  }
+
+  async function amPrintAll() {
+    const status = document.getElementById('amBulkStatus');
+
+    // Vraag bevestiging
+    if (!confirm('Zijn alle assets aangemaakt in de Asset Manager?\n\nKlik OK om te printen.')) return;
+
+    const cards = document.querySelectorAll('#amDefaultAssets [data-asset-id]');
+    if (!cards.length) { status.textContent = 'Geen assets om te printen.'; return; }
+
+    // Verzamel print jobs
+    const jobs = [];
+    cards.forEach(card => {
+      const assetId = card.dataset.assetId;
+      const label   = card.querySelector('[data-field="label"]')?.value?.trim();
+      const copies  = parseInt(card.querySelector('[data-field="printCount"]')?.value) || 1;
+      if (assetId && label && copies > 0) jobs.push({ assetId, label, copies });
+    });
+
+    if (!jobs.length) { status.textContent = 'Geen geldige print jobs.'; return; }
+
+    status.innerHTML = `<span style="color:#64748b">🖨️ Printen... (0/${jobs.length})</span>`;
+
+    let done = 0;
+    for (const job of jobs) {
+      status.innerHTML = `<span style="color:#64748b">🖨️ ${job.label} (${done + 1}/${jobs.length})...</span>`;
+      let success = false;
+      // Max 2 pogingen
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const res = await fetch('/api/print', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ assetId: job.assetId, label: job.label, copies: job.copies })
+          });
+          const data = await res.json();
+          if (data.ok) { success = true; break; }
+        } catch (_) {}
+        if (attempt === 0) await new Promise(r => setTimeout(r, 1000)); // 1s wachten voor retry
+      }
+      if (!success) {
+        status.innerHTML = `<span style="color:#f87171">❌ Fout bij printen van ${job.label} — probeer opnieuw</span>`;
+        return;
+      }
+      done++;
+    }
+    status.innerHTML = `<span style="color:#4ade80">✅ Alle ${done} stickers geprint!</span>`;
+  }
+
   // ── Asset Manager ─────────────────────────────────────────────────────────
 
   function generateAssetId(index = 0) {
@@ -1452,6 +1518,7 @@
       name: 'VlegelBox',
       typeNumber: 'VlegelBox',
       pictureUrl: 'https://placehold.net/400x400.png',
+      printCount: 1,
       fixedProps: [],
       varProps: [{ name: 'Serial Number', value: '' }]
     },
@@ -1461,6 +1528,7 @@
       name: 'Gateway',
       typeNumber: 'Milesight UG56-L08GL-868M',
       pictureUrl: 'https://botland.store/img/cms/23279_5.jpg',
+      printCount: 1,
       fixedProps: [{ name: 'IP', value: '192.168.31.30' }],
       varProps: [
         { name: 'Serial Number', value: '' },
@@ -1474,27 +1542,57 @@
       name: 'Waveshare',
       typeNumber: 'Waveshare RS485 TO POE TCP/IP',
       pictureUrl: 'https://www.waveshare.com/media/catalog/product/cache/1/image/800x800/9df78eab33525d08d6e5fb8d27136e95/r/s/rs485-to-eth-b-1.jpg',
+      printCount: 1,
       fixedProps: [
         { name: 'IP', value: '192.168.31.40' },
         { name: 'MODBUS Serial Port Format', value: '9600 8N1' },
         { name: 'Serial Number', value: 'N/A' }
       ],
       varProps: []
-    },
-    {
-      key: 'am103l',
-      label: 'O_IAQ_AM103L_LORA',
-      name: 'environment',
-      typeNumber: 'AM103-L-868M',
-      pictureUrl: 'https://cdn1.domadoo.fr/32706-large_default/milesight-lorawan-temp-hum-co2-luchtkwaliteitssensor-am103l.jpg',
-      fixedProps: [{ name: 'Password', value: '199825' }],
-      varProps: [
-        { name: 'Serial Number', value: '' },
-        { name: 'EUI', value: '' },
-        { name: 'APP KEY', value: '' }
-      ]
     }
   ];
+
+  // Voegt automatisch een AM103L LoRaWAN device toe bij standaard box
+  function addAM103LDevice(assetId) {
+    // Voeg device toe
+    addDevice('lorawan');
+    const idx = deviceCount; // addDevice verhoogt deviceCount
+
+    // Selecteer de juiste decoder — zoek op prefix O_IAQ_AM103L_LORA
+    const decoderMatch = (templates.lorawan || []).find(t => t.name.startsWith('O_IAQ_AM103L_LORA'));
+    if (decoderMatch) {
+      const drop = document.getElementById(`decoder-drop-${idx}`);
+      const optIdx = (drop?._options || []).findIndex(o => o.value === decoderMatch.name);
+      if (optIdx >= 0) selectCombo(`decoder-combo-${idx}`, `decoder-val-${idx}`, optIdx, `decoder-outputs-${idx}`);
+    }
+
+    // Vul asset ID in
+    const assetIdField = document.querySelector(`#device-${idx} [name="assetId_0"]`);
+    if (assetIdField) assetIdField.value = assetId;
+
+    // Vul meetpunt naam in
+    const naamField = document.querySelector(`#device-${idx} [name="naam"]`);
+    if (naamField) naamField.value = 'environment';
+
+    // Selecteer metertype op tag O_IAQ_AM103L_LORA_V1
+    const mt = allMeterTypes.find(m => m.Tag === 'O_IAQ_AM103L_LORA_V1');
+    if (mt) {
+      const drop = document.getElementById(`metertype-drop-${idx}`);
+      const optIdx = (drop?._options || []).findIndex(o => o.value === String(mt.Id));
+      if (optIdx >= 0) selectCombo(`metertype-combo-${idx}`, `metertype-val-${idx}`, optIdx);
+    }
+
+    // Label en Name invullen in de asset card (verschijnt via amGenerateDeviceCards)
+    setTimeout(() => {
+      const card = document.querySelector(`[data-device-idx="${idx}"]`);
+      if (card) {
+        const labelInput = card.querySelector('[data-field="label"]');
+        const nameInput  = card.querySelector('[data-field="name"]');
+        if (labelInput) labelInput.value = 'ENVIR';
+        if (nameInput)  nameInput.value  = 'environment';
+      }
+    }, 50);
+  }
 
   // Render de default assets lijst — toont pas na klikken op knop
   function amGenerateDefaults() {
@@ -1531,7 +1629,11 @@
             <span style="color:#64748b;font-size:11px;margin-left:8px">${tmpl.typeNumber}</span>
             <span style="color:#374151;font-size:10px;margin-left:8px">ID: ${ids[idx]}</span>
           </div>
-          <button onclick="amRemoveDefault('${tmpl.key}')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;padding:0 4px" title="Verwijderen">✕</button>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:10px;color:#64748b">×</span>
+            <input type="number" data-field="printCount" value="${tmpl.printCount || 1}" min="0" max="99" style="width:40px;font-size:12px;padding:3px 5px;text-align:center;box-sizing:border-box">
+            <button onclick="amRemoveDefault('${tmpl.key}')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;padding:0 4px" title="Verwijderen">✕</button>
+          </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
           <div>
@@ -1553,6 +1655,9 @@
       `;
       container.appendChild(card);
     });
+
+    // AM103L als LoRaWAN device toevoegen met eigen uniek ID
+    addAM103LDevice(generateAssetId(3));
   }
 
   function amRemoveDefault(key) {
