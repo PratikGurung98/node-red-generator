@@ -527,3 +527,90 @@ iothub template fix: node-redSTART → rechtstreeks naar DATABACKUP ipv via link
 remapIds fix: n.broker en n.tls worden nu ook geremapped
 moonfish gateway meter MeterCategory: NULL → ''
 SQL preview/execute: BEGIN TRAN → preview → commit of annuleer, 30s timeout
+
+Update: 28/05/2026 — ~20:30
+Asset Manager integratie (fase 1):
+
+Productie API gevonden: https://assetmanagerapi-eucvc5gscng2ajfh.westeurope-01.azurewebsites.net
+CORS opgelost via proxy routes in app.js (/api/assetmanager/search, /api/assetmanager/asset/:id, /api/assetmanager/create, /api/assetmanager/create-bulk)
+Asset zoeken werkend vanuit generator
+DataType enum uitgezocht: 0=Text, 1=Date, 2=FileURL, 3=List, 4=Number, 5=PictureURL
+Asset ID formaat: 3600 (postcode Tongeren) + ddMMyyyyHHmmss, BigInt nodig want 18 cijfers overschrijdt JS Number precision
+Knop "🔧 Standaard Vlegelbox items" genereert 4 default assets (VlegelBox, Gateway, Waveshare, AM103L) met unieke IDs en vult stap 3 automatisch in
+Gateway Meter naam: Gateway_ prefix vast + inverveld
+Alle 4 default assets verwijderbaar, opnieuw klikken overschrijft met nieuwe IDs
+Bulk create werkend via /api/assetmanager/create-bulk
+
+Update: 28/05/2026 — ~22:45
+Asset Manager integratie (fase 2) — decoder assets:
+
+asset-templates.json aangemaakt (NOOIT vervangen) — bevat alle decoders met hun assets, varProps, fixedProps, pictureUrls en typeNumbers
+Route GET /api/assetmanager/templates toegevoegd aan app.js
+Bij decoder selectie → asset cards automatisch gegenereerd in Asset Manager container onderaan
+Prefix matching op decoder naam (zonder versie suffix)
+Stomme toestellen (Eastron, etc.) krijgen "stom toestel" badge
+Asset ID automatisch ingevuld in device veld bij communicating asset
+Bug gefixed: Name/Label duplicate property → API weigerde Eastron assets
+BigInt fix voor 18-cijferige asset IDs (JS Number precision limit)
+
+UI herstructurering:
+
+Asset Manager zoeken bovenaan
+"🔧 Standaard Vlegelbox items" knop na IoT Hub
+Asset container onderaan na devices
+"📋 Aanmaken in Asset Manager" knop onderaan
+Generate knoppen ongewijzigd
+
+Printer integratie (ontdekt, nog niet gebouwd):
+
+Zebra label printer op 192.168.0.200:9100 via raw TCP
+QR code inhoud: https://id.vlegel.technology/{assetId}
+Label tekst = Label property van asset
+Vlegel Technology logo op sticker
+
+Update: 29/05/2026 — ~16:30
+Generator bug fix:
+
+Formatter detectie uitgebreid met BEGINT keyword — decoders met BEGINT_MET_36 als placeholder werden niet herkend en kregen geen link out verbinding
+Fix in generator/index.js
+
+Asset Manager integratie (fase 3) — print:
+
+Printer: Digitus DA-81021, 300 DPI, 192.168.0.200:9100, raw TCP
+Sticker formaat: 38×19mm (454×225 dots bij 300 DPI)
+ZPL template gevonden in asset manager source — bevat Vlegel logo bitmap, QR code (https://id.vlegel.technology/{assetId}), label tekst
+POST /api/print route in app.js — raw TCP socket naar printer
+buildZPL(assetId, label, copies) functie
+Auto-retry bij printer timeout (max 2 pogingen)
+
+Print flow in UI:
+
+printCount per asset type in asset-templates.json en AM_DEFAULTS
+Standaard: VlegelBox/Gateway/Waveshare ×1, Dragino/AM103L/rest ×2, Eastron ML1/ML4 ×5, Eastron ROG ×6
+Aanpasbaar ×N veld per asset card
+"🖨️ Print Vlegelbox" knop naast "📋 Aanmaken in Asset Manager"
+Bevestigingspopup voor print start
+Status per sticker tijdens print
+
+UI fixes:
+
+DevEUI auto-sync naar asset card EUI veld
+Modbus adres auto-sync naar asset card
+Dubbele Label/Name verwijderd uit modbus varProps
+
+Update: 29/05/2026
+Bugfixes & verbeteringen:
+
+BEGINT keyword fix in generator
+DevEUI/Modbus adres auto-sync naar asset cards
+Dubbele Label/Name fix modbus
+AM103L automatisch toegevoegd als LoRaWAN device bij standaard items
+
+Print integratie volledig:
+
+Digitus printer via raw TCP
+ZPL template met Vlegel logo
+printCount per asset type configureerbaar
+Auto-retry, status per sticker, bevestigingspopup
+
+Tijdwinst: van ~3 uur naar ~30-40 min per box 🎉
