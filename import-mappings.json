@@ -1,0 +1,236 @@
+{
+  "_comment": "NOOIT VERVANGEN — eigen configuratie. Pas aan bij nieuwe decoders of na decoder cleanup.",
+  "_versie": "1.0 — 01/06/2026",
+
+  "decoders": {
+
+    "E_630ML1_DRAG_LORA": {
+      "type": "lorawan",
+      "multiKanaal": false,
+      "lib": "E_630ML1_DRAG_LORA_V4"
+    },
+
+    "E_630ML4_DRAG_LORA": {
+      "type": "lorawan",
+      "multiKanaal": true,
+      "libPerKanaal": {
+        "2": "E_630ML4_DRAG_LORA_2DEVICES",
+        "3": "E_630ML4_DRAG_LORA_3DEVICES"
+      },
+      "_note": "Na cleanup hernoemen naar V2/V3. Key = aantal kanalen."
+    },
+
+    "E_630ROG_DRAG_LORA": {
+      "type": "lorawan",
+      "multiKanaal": false,
+      "lib": "E_630ROG_DRAG_LORA_V3"
+    },
+
+    "E_630ROG_EM300_LORA": {
+      "type": "lorawan",
+      "multiKanaal": false,
+      "lib": "E_630ROG_EM300_LORA_V1"
+    },
+
+    "E_IEM3255_DRAG_LORA": {
+      "type": "lorawan",
+      "multiKanaal": false,
+      "lib": "E_IEM3255_DRAG_LORA_V1"
+    },
+
+    "E_PM5300_DRAG_LORA": {
+      "type": "lorawan",
+      "multiKanaal": false,
+      "lib": "E_PM5300_DRAG_LORA_V1"
+    },
+
+    "E_SCT_CT303_LORA": {
+      "type": "lorawan",
+      "multiKanaal": false,
+      "lib": "E_SCT_CT303_LORA_V2"
+    },
+
+    "E_SDM72DM_DRAG_LORA": {
+      "type": "lorawan",
+      "multiKanaal": false,
+      "lib": "E_SDM72DM_DRAG_LORA_V2"
+    },
+
+    "E_A1MB_DRAG_LORA": {
+      "type": "lorawan",
+      "multiKanaal": false,
+      "lib": "E_A1MB_DRAG_LORA_V1"
+    },
+
+    "E_LHI110_LORA": {
+      "type": "lorawan",
+      "multiKanaal": false,
+      "lib": "E_LHI110_LORA_V2"
+    },
+
+    "E_DRY_EM300_LORA": {
+      "type": "lorawan",
+      "multiKanaal": false,
+      "lib": "E_DRY_EM300_LORA_V1"
+    },
+
+    "G_PNP_ADEU_LORA": {
+      "type": "lorawan",
+      "multiKanaal": false,
+      "lib": "G_PNP_ADEU_LORA_V2"
+    },
+
+    "G_DRY_EM300_LORA": {
+      "type": "lorawan",
+      "multiKanaal": false,
+      "lib": "G_DRY_EM300_LORA_V1"
+    },
+
+    "G_FLASHO_LORA": {
+      "type": "lorawan",
+      "multiKanaal": false,
+      "lib": "G_FLASHO_LORA_V1"
+    },
+
+    "G_OPT_FM432_LORA": {
+      "type": "lorawan",
+      "multiKanaal": false,
+      "lib": "G_OPT_FM432_LORA_V1"
+    },
+
+    "H_MULTICAL603_DRAG_LORA": {
+      "type": "lorawan",
+      "multiKanaal": false,
+      "lib": "H_MULTICAL603_DRAG_LORA",
+      "_note": "Parse error — nakijken. Extensie is .jsON"
+    },
+
+    "H_MC403TH_EM300_LORA": {
+      "type": "lorawan",
+      "multiKanaal": false,
+      "lib": "H_MC403TH_EM300_LORA_V1"
+    },
+
+    "O_IAQ_AM103L_LORA": {
+      "type": "lorawan",
+      "multiKanaal": false,
+      "lib": "O_IAQ_AM103L_LORA_V1"
+    },
+
+    "O_IAQ_AM307_LORA": {
+      "type": "lorawan",
+      "multiKanaal": false,
+      "lib": "O_IAQ_AM307_LORA_V1"
+    },
+
+    "O_TEMP_EM300_LORA": {
+      "type": "lorawan",
+      "multiKanaal": false,
+      "lib": "O_TEMP_EM300_LORA_V1"
+    },
+
+    "D_LEAK_EM300_LORA": {
+      "type": "lorawan",
+      "multiKanaal": false,
+      "lib": "D_LEAK_EM300_LORA_V1"
+    },
+
+    "D_LEVEL_EM500UDL_LORA": {
+      "type": "lorawan",
+      "multiKanaal": false,
+      "lib": "D_LEVEL_EM500UDL_LORA_V1"
+    },
+
+    "D_POS_EM300_LORA": {
+      "type": "lorawan",
+      "multiKanaal": false,
+      "lib": "D_POS_EM300_LORA_V1"
+    },
+
+    "D_DEUR_LDS03A_LORA": {
+      "type": "lorawan",
+      "multiKanaal": false,
+      "lib": "DEUR_Dragino_LDS03A",
+      "_note": "Na cleanup hernoemen naar D_DEUR_LDS03A_LORA_V1"
+    },
+
+    "S_DRY_IO_DRAG_LORA": {
+      "type": "lorawan",
+      "multiKanaal": false,
+      "lib": "S_DRY_IO_DRAG_LORA_V1"
+    },
+
+    "W_PNP_ADEU_LORA": {
+      "type": "lorawan",
+      "multiKanaal": false,
+      "lib": "W_PNP_ADEU_LORA_V2"
+    },
+
+    "W_DRY_EM300_LORA": {
+      "type": "lorawan",
+      "multiKanaal": false,
+      "lib": "W_DRY_EM300_LORA_V1"
+    },
+
+    "W_BME_HYDRO_LORA": {
+      "type": "lorawan",
+      "multiKanaal": false,
+      "lib": "W_BME_HYDRO_LORA_V2"
+    },
+
+    "W_MAD_AROW_LORA": {
+      "type": "lorawan",
+      "multiKanaal": false,
+      "lib": "W_MAD_AROW_LORA_V1",
+      "_note": "Nog niet in lib! Toevoegen na ontvangst decoder."
+    },
+
+    "E_630ML1_WAVE_TCP": {
+      "type": "modbus",
+      "multiKanaal": false,
+      "lib": "E_630ML1_WAVE_TCP_V6"
+    },
+
+    "E_630ML4_WAVE_TCP": {
+      "type": "modbus",
+      "multiKanaal": true,
+      "lib": "E_630ML4_WAVE_TCP_V6",
+      "_note": "Modbus ML4 = N aparte devices, allemaal zelfde lib. Generator maakt 1 device per kanaal."
+    },
+
+    "E_630ROG_WAVE_TCP": {
+      "type": "modbus",
+      "multiKanaal": false,
+      "lib": "E_630ROG_WAVE_TCP_V6"
+    },
+
+    "E_POWERTAG_PAS800_TCP": {
+      "type": "modbus",
+      "multiKanaal": false,
+      "lib": "E_POWERTAG_PAS800_TCP_V3"
+    },
+
+    "H_MULTICAL603_WAVE_TCP": {
+      "type": "modbus",
+      "multiKanaal": false,
+      "lib": "H_MULTICAL603_WAVE_TCP_V1"
+    },
+
+    "H_SC5I_WAVE_TCP": {
+      "type": "modbus",
+      "multiKanaal": false,
+      "lib": "H_SC5I_WAVE_TCP_V1"
+    }
+
+  },
+
+  "teBepalenCategories": {
+    "**TEBEPALENGASMETER":      "G",
+    "**TEBEPALENWATERMETER":    "W",
+    "**TEBEPALENENERGIEMETER":  "E",
+    "**TEBEPALENWARMTEMETER":   "H"
+  },
+
+  "_versionStrip": true,
+  "_versionStripPattern": "_V[0-9]+$|_[0-9]+DEVICES$"
+}

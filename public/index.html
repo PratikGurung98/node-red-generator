@@ -374,10 +374,16 @@
   <div class="section-title"><span class="step-badge">4</span>Devices</div>
   <div id="devices"></div>
 
-  <div class="add-btns">
-    <button class="add-btn lorawan" onclick="addDevice('lorawan')">+ LoRaWAN device</button>
-    <button class="add-btn modbus"  onclick="addDevice('modbus')">+ Modbus device</button>
-  </div>
+<div class="add-btns" style="flex-wrap:wrap;gap:8px">
+  <button class="add-btn lorawan" onclick="addDevice('lorawan')">+ LoRaWAN device</button>
+  <button class="add-btn modbus"  onclick="addDevice('modbus')">+ Modbus device</button>
+  <label class="add-btn" style="cursor:pointer;background:#1a2a1a;border-color:#166534;color:#4ade80">
+    📂 Import JSON
+    <input type="file" accept=".json" style="display:none" onchange="importFromJSON(this)">
+  </label>
+  <span id="import-status" style="font-size:12px;color:#64748b;align-self:center"></span>
+</div>
+
 
   <!-- Asset Manager — assets container -->
   <div class="section-title">Asset Manager — aan te maken</div>
@@ -943,15 +949,25 @@
       `;
 
       // Als communicating en EUI beschikbaar → link aan het device EUI veld
+      // EUI sync voor communicating device
       if (asset.role === 'communicating') {
         const euiInput = card.querySelector('[data-field="var_EUI"]');
         if (euiInput) {
           const deviceEui = document.getElementById(`device-${deviceIdx}`)?.querySelector('[name="deveui"]');
           if (deviceEui?.value) euiInput.value = deviceEui.value;
         }
-        // Asset ID ook terugschrijven naar het device asset ID veld
-        const assetIdField = document.getElementById(`device-${deviceIdx}`)?.querySelector('[name="assetId_0"]');
-        if (assetIdField && !assetIdField.value) assetIdField.value = id;
+      }
+
+      // Asset ID terugschrijven naar device card:
+      // - communicating (bv Dragino) → assetId_0 ALLEEN als er geen stom toestellen zijn
+      // - stom toestel → assetId_0, assetId_1, ... op volgorde
+      const outputFields = Array.from(document.getElementById(`device-${deviceIdx}`)?.querySelectorAll('[name^="assetId_"]') || []);
+      const stomCount = tmpl.assets.filter(a => a.role !== 'communicating').length;
+      if (stomCount === 0 && asset.role === 'communicating') {
+        if (outputFields[0] && !outputFields[0].value) outputFields[0].value = id;
+      } else if (asset.role !== 'communicating') {
+        const stomIdx = tmpl.assets.slice(0, assetIdx).filter(a => a.role !== 'communicating').length;
+        if (outputFields[stomIdx] && !outputFields[stomIdx].value) outputFields[stomIdx].value = id;
       }
 
       container.appendChild(card);
@@ -960,6 +976,149 @@
     // Zorg dat de aanmaken knop zichtbaar is
     const actions = document.getElementById('amDefaultActions');
     if (actions) actions.style.display = 'flex';
+  }
+  async function importFromJSON(input) {
+    const file = input.files[0];
+    if (!file) return;
+    input.value = ''; // reset zodat je hetzelfde bestand opnieuw kan laden
+
+    const statusEl = document.getElementById('import-status');
+    statusEl.textContent = 'Laden...';
+    statusEl.style.color = '#64748b';
+
+    let importData;
+    try {
+      importData = JSON.parse(await file.text());
+    } catch (e) {
+      statusEl.textContent = 'Ongeldig JSON bestand.';
+      statusEl.style.color = '#ef4444';
+      return;
+    }
+
+    let result;
+    try {
+      const res = await fetch('/api/import/parse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(importData)
+      });
+      result = await res.json();
+    } catch (e) {
+      statusEl.textContent = 'Server fout bij verwerken.';
+      statusEl.style.color = '#ef4444';
+      return;
+    }
+
+    if (!result.ok) {
+      statusEl.textContent = 'Fout: ' + result.error;
+      statusEl.style.color = '#ef4444';
+      return;
+    }
+
+    // Boxnaam invullen als die leeg is
+    const boxNameField = document.getElementById('boxName');
+    if (boxNameField && !boxNameField.value.trim() && result.boxNaam) {
+      boxNameField.value = result.boxNaam;
+    }
+
+    // Devices inladen
+    let aantalIngeladen = 0;
+    for (const d of result.devices) {
+      loadImportedDevice(d);
+      aantalIngeladen++;
+    }
+
+    // Errors tonen als warnings
+    if (result.errors && result.errors.length > 0) {
+      statusEl.innerHTML = `${aantalIngeladen} devices geladen. ⚠️ ${result.errors.length} waarschuwing(en):<br>` +
+        result.errors.map(e => `<span style="color:#f59e0b">${e}</span>`).join('<br>');
+      statusEl.style.color = '#f59e0b';
+    } else {
+      statusEl.textContent = `${aantalIngeladen} devices geladen.`;
+      statusEl.style.color = '#4ade80';
+    }
+  }
+
+  function loadImportedDevice(d) {
+    // TeBepalen: leeg device aanmaken met categorie filter
+    if (d._teBepalen) {
+      const commType = 'lorawan';
+      addDevice(commType);
+      const idx = deviceCount;
+
+      // Naam invullen
+      const naamField = document.querySelector(`#device-${idx} [name="naam"]`);
+      if (naamField && d.naam) naamField.value = d.naam;
+
+      // Badge aanpassen naar "TE BEPALEN"
+      const badge = document.querySelector(`#device-${idx} .comm-badge`);
+      if (badge) {
+        badge.textContent = 'TE BEPALEN';
+        badge.style.background = '#3b2a00';
+        badge.style.color = '#fbbf24';
+        badge.style.borderColor = '#92400e';
+      }
+
+      // Categorie hint tonen
+      if (d._categorie) {
+        const header = document.querySelector(`#device-${idx} .device-header`);
+        if (header) {
+          const hint = document.createElement('span');
+          hint.style.cssText = 'font-size:11px;color:#fbbf24;margin-left:auto';
+          hint.textContent = `categorie: ${d._categorie}`;
+          header.appendChild(hint);
+        }
+      }
+      return;
+    }
+
+    // Normaal device
+    const commType = d.commType || 'lorawan';
+    addDevice(commType);
+    const idx = deviceCount;
+
+    // Decoder selecteren
+    if (d.template) {
+      const templateList = templates[commType] || [];
+      const options = templateList.map(t => ({
+        value: t.name,
+        label: `${t.name}${t.outputs > 1 ? ` (${t.outputs} outputs)` : ''}`,
+        outputs: t.outputs || 1
+      }));
+      renderCombo(`decoder-combo-${idx}`, options, `decoder-val-${idx}`, `decoder-outputs-${idx}`);
+      const optIdx = options.findIndex(o =>
+        o.value === d.template || o.value.startsWith(d.template) || d.template.startsWith(o.value)
+      );
+      if (optIdx >= 0) {
+        selectCombo(`decoder-combo-${idx}`, `decoder-val-${idx}`, optIdx, `decoder-outputs-${idx}`);
+      }
+    }
+
+    // Naam invullen — na selectCombo want onTemplateChange is synchroon
+    if (!d._kanaalNamen) {
+      const naamField = document.querySelector(`#device-${idx} [name="naam"]`);
+      if (naamField && d.naam) naamField.value = d.naam;
+    }
+
+    // Kanaal namen bij multi-output LoRa (naam_0, naam_1, ...)
+    if (d._kanaalNamen && d._kanaalNamen.length > 0) {
+      d._kanaalNamen.forEach((naam, i) => {
+        const veld = document.querySelector(`#device-${idx} [name="naam_${i}"]`);
+        if (veld) veld.value = naam;
+      });
+    }
+
+    // TA en Fases direct invullen in asset manager cards
+    if (d._ta) {
+      document.querySelectorAll(`[data-device-idx="${idx}"] [data-field="var_TA"]`).forEach(el => {
+        el.value = d._ta;
+      });
+    }
+    if (d._fases) {
+      document.querySelectorAll(`[data-device-idx="${idx}"] [data-field="var_Fases"]`).forEach(el => {
+        el.value = String(d._fases);
+      });
+    }
   }
 
   function removeDevice(idx) {

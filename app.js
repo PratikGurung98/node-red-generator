@@ -294,6 +294,17 @@ app.put('/api/once/sim/:iccid/label', async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+const { parseImportJSON } = require('./import');
+
+app.post('/api/import/parse', (req, res) => {
+  try {
+    const result = parseImportJSON(req.body);
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    res.status(400).json({ ok: false, error: err.message });
+  }
+});
+
 
 app.post('/api/generate', (req, res) => {
   try {
