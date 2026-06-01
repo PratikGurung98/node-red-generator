@@ -614,3 +614,39 @@ printCount per asset type configureerbaar
 Auto-retry, status per sticker, bevestigingspopup
 
 Tijdwinst: van ~3 uur naar ~30-40 min per box 🎉
+
+## Update — 01/06/2026
+
+### 1NCE SIM integratie (generator tool)
+- Nieuwe sectie in de UI tussen "Standaard Vlegelbox items" en Asset Manager
+- Zoek op gedeeltelijke ICCID → lijst van matching SIMs met ICCID, IP, label, status
+- Bevestigen → label in 1NCE instellen op boxnaam + ICCID/IP prefillen in gateway card
+- Backend: `GET /api/once/sim?q=...` en `PUT /api/once/sim/:iccid/label`
+- Credentials toevoegen in `config.json` onder `"once": { "username": "...", "password": "..." }`
+
+### 1NCE Monitoring flow (Node-RED)
+- Nieuwe tab "1NCE Monitoring" in Node-RED
+- Haalt alle Vlegelbox ICCIDs op uit de Asset Manager
+- Checkt per SIM: status (Enabled/Disabled), online/offline, data quota
+- Stuurt elke nacht om 02:00 een HTML rapport via email
+
+### Sessie 01/06/2026 — decoder standaardisatie & import JSON onderzoek
+
+**Decoder standaard afgesproken (cleanup nog uitvoeren — zie decoder_cleanup_todo.md):**
+- Asset placeholder: `ASSET_PLACEHOLDER` (was: ASSET_ID_START_MET_36, BEGINT_MET_36, ASSET, ASSET_ID, VOER_ID_IN, JOUW_ASSET_ID)
+- Naam placeholder: `{meetpunt naam}` (overal consistent)
+- Bestandsnaam: `CATEGORIE_NAAM_PROTOCOL_Vx.json` (alles hoofdletters)
+- Comment nodes: verwijderen uit alle lib files
+- Na cleanup: generator/index.js vereenvoudigt naar één regex voor placeholder + naam
+
+**Import JSON onderzoek:**
+- Bron gevonden: `dbo.VlegelBoxConfigurations` in `vlegelresourceplanning.database.windows.net` (ResourcePlanningDB)
+- JSON formaat: TreeNames + TreeSelections met Material IDs
+- Mapping Material ID → decoder naam via `Type` kolom in `dbo.Materials`
+- Volledige mapping opgebouwd (zie import-mappings.json — nog aan te maken)
+- Architectuur beslissing: centrale `import-mappings.json` met parser per brontype (vlegelbox_configurator, devops_text)
+- Nog te bouwen: import UI + parser in nieuwe sessie NA decoder cleanup
+
+**Bugfixes deze sessie:**
+- Enersee preview/execute toonde geen rijen → verificatie SELECT toegevoegd aan buildEnerseeSQL
+- Modbus groep Y-positionering: vaste 280px → cumulatief op basis van werkelijke groephoogte (h + 60px margin)

@@ -363,6 +363,7 @@ function buildModbus(devices, tabId, linkInId) {
   const clientsByName = {}; // name → { id, node }
   const allNodes  = [];
   const groups    = [];
+  let yOffset     = 0; // cumulatieve Y positie op basis van werkelijke groephoogte
 
   devices.forEach((device, idx) => {
     const libNodes = loadLib('modbus', device.template);
@@ -405,6 +406,9 @@ function buildModbus(devices, tabId, linkInId) {
 
     if (!getterNode) throw new Error(`Geen modbus-getter gevonden in template ${device.template}`);
 
+    // Basis Y van de groep in de originele template (voor normalisatie)
+    const groupBaseY = groupNode?.y ?? 0;
+
     // Zoek de juiste client voor deze decoder op naam
     const libClient = libNodes.find(n => n.type === 'modbus-client');
     const clientId  = libClient ? clientsByName[libClient.name]?.id : Object.values(clientsByName)[0]?.id;
@@ -423,9 +427,14 @@ function buildModbus(devices, tabId, linkInId) {
       if (n.type === 'link out') {
         n.links = [linkInId];
       }
-      if (n.y !== undefined) n.y += idx * 280;
-      if (n.x !== undefined && n.type === 'group') n.y += idx * 280; // groep mee verschuiven
+      // Reset naar absolute Y positie: trek de originele groep Y eraf, voeg cumulatieve offset toe
+      if (n.y !== undefined) n.y = (n.y - groupBaseY) + yOffset;
     });
+
+    // Cumulatieve offset ophogen met hoogte van deze groep + margin
+    const groupH = groupNode?.h ?? 222;
+    const currentGroupY = yOffset; // bewaar voor inject positie
+    yOffset += groupH + 60;
 
     groups.push({ modbusGetterId: getterNode.id, go2NextNode });
     allNodes.push(...remapped);
@@ -448,7 +457,7 @@ function buildModbus(devices, tabId, linkInId) {
         payload: '',
         payloadType: 'date',
         x: groupNode ? groupNode.x - 20 : 60,
-        y: groupNode ? groupNode.y + 180 : 180,
+        y: currentGroupY + (groupNode ? groupNode.h / 2 : 100),
         wires: [[getterNode.id]],
       });
     } else {

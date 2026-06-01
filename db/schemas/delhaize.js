@@ -91,6 +91,7 @@ WHERE GatewayId = @GatewayDbId;
 
 function buildEnerseeSQL({ devices }) {
   const lines = [];
+  const allAssetIds = [];
 
   devices.forEach(device => {
     const ids = device.assetIds?.length ? device.assetIds : [device.assetId];
@@ -98,6 +99,8 @@ function buildEnerseeSQL({ devices }) {
       const naam      = ids.length > 1 ? `${device.naam || ''} ${i + 1}`.trim() : (device.naam || '');
       const visibleDts = (device.enerseeDataTypes || []).filter(dt => dt.visible && dt.name && dt.category);
       if (visibleDts.length === 0) return;
+
+      allAssetIds.push(assetId);
 
       lines.push(`-- Meter: ${assetId} (${naam})`);
       visibleDts.forEach(dt => {
@@ -112,6 +115,15 @@ function buildEnerseeSQL({ devices }) {
   });
 
   if (lines.length === 0) return null;
+
+  // Verificatie SELECT — toont resultaten in preview/execute UI
+  const inClause = [...new Set(allAssetIds)].map(id => `'${esc(id)}'`).join(', ');
+  lines.push(`-- Verificatie`);
+  lines.push(`SELECT e.Id, e.MeterId, e.DataTypeId, e.Name, e.Category, m.Name AS MeterName`);
+  lines.push(`FROM dbo.EnerseeMetricNames e`);
+  lines.push(`JOIN dbo.Meters m ON m.Id = e.MeterId`);
+  lines.push(`WHERE m.Name IN (${inClause})`);
+  lines.push(`ORDER BY m.Name, e.DataTypeId;`);
 
   return `-- ===== ENERSEE INSERTS (uitvoeren NA gateway aanmaken) =======================\n\n` + lines.join('\n');
 }
