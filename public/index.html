@@ -207,6 +207,21 @@
       color: #fbbf24;
       margin-top: 10px;
     }
+
+    .once-sim-row {
+      display: flex; align-items: center; gap: 10px;
+      background: #0f1117; border: 1px solid #2d3148;
+      border-radius: 6px; padding: 10px 12px; cursor: pointer;
+      transition: border-color .15s;
+    }
+    .once-sim-row:hover { border-color: #4f6ef7; }
+    .once-sim-row.selected { border-color: #4f6ef7; background: #1e2245; }
+    .once-sim-row input[type=radio] { width: auto; cursor: pointer; }
+    .once-iccid { font-family: monospace; font-size: 13px; color: #e2e8f0; flex: 1; }
+    .once-ip    { font-family: monospace; font-size: 12px; color: #60a5fa; min-width: 110px; }
+    .once-label { font-size: 11px; color: #64748b; min-width: 100px; }
+    .once-status-ok  { font-size: 11px; color: #4ade80; }
+    .once-status-dis { font-size: 11px; color: #f87171; }
   </style>
 </head>
 <body>
@@ -296,6 +311,26 @@
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       <button class="generate-btn" style="padding:10px 20px;font-size:13px;width:auto;flex-shrink:0" onclick="amGenerateDefaults()">🔧 Standaard Vlegelbox items</button>
       <div style="font-size:12px;color:#64748b">Genereert VlegelBox, Gateway, Waveshare en AM103L — vult asset IDs in stap 3 in.</div>
+    </div>
+  </div>
+
+
+  <!-- 1NCE SIM -->
+  <div class="section-title">1NCE SIM</div>
+  <div class="card" id="onceCard">
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <input type="text" id="onceSearch" placeholder="Laatste 6 (of meer) cijfers van ICCID..." style="flex:1;width:auto;min-width:0"
+        onkeydown="if(event.key==='Enter')onceLookup()">
+      <button class="generate-btn" style="padding:8px 16px;font-size:13px;white-space:nowrap;width:auto;flex-shrink:0" onclick="onceLookup()">Zoeken</button>
+    </div>
+    <div id="onceStatus" style="min-height:18px;font-size:12px;color:#64748b"></div>
+    <div id="onceResults" style="display:none;margin-top:12px">
+      <div id="onceSimList" style="display:flex;flex-direction:column;gap:6px"></div>
+      <div style="margin-top:12px;display:flex;align-items:center;gap:10px">
+        <div style="flex:1;font-size:12px;color:#64748b">Label wordt ingesteld op de box naam.</div>
+        <button class="generate-btn" id="onceConfirmBtn" style="padding:8px 20px;font-size:13px;width:auto;background:#166534;color:#4ade80;border:1px solid #15803d" onclick="onceConfirm()">Bevestigen</button>
+      </div>
+      <div id="onceConfirmStatus" style="margin-top:8px;font-size:12px"></div>
     </div>
   </div>
 
@@ -1809,6 +1844,104 @@
     if (e.key === 'Enter') amSearch();
   });
 
+
+
+  // ── 1NCE SIM ──────────────────────────────────────────────────────────────
+
+  let onceFoundSims = [];
+
+  async function onceLookup() {
+    const q      = document.getElementById('onceSearch').value.trim();
+    const status = document.getElementById('onceStatus');
+    const results = document.getElementById('onceResults');
+    if (!q) { status.textContent = 'Vul (een deel van) de ICCID in.'; return; }
+
+    status.innerHTML = '<span style="color:#64748b">Zoeken in 1NCE...</span>';
+    results.style.display = 'none';
+
+    try {
+      const res  = await fetch('/api/once/sim?q=' + encodeURIComponent(q));
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error);
+
+      onceFoundSims = data.sims;
+      status.textContent = '';
+
+      if (!data.sims.length) {
+        status.innerHTML = '<span style="color:#f87171">Geen SIMs gevonden voor deze zoekopdracht.</span>';
+        return;
+      }
+
+      const list = document.getElementById('onceSimList');
+      list.innerHTML = data.sims.map((s, i) => `
+        <label class="once-sim-row" id="once-row-${i}">
+          <input type="radio" name="onceSim" value="${i}" onchange="onceSelectRow(${i})">
+          <span class="once-iccid">${s.iccid}</span>
+          <span class="once-ip">${s.ip || '—'}</span>
+          <span class="once-label">${s.label || '(geen label)'}</span>
+          <span class="${s.status === 'Enabled' ? 'once-status-ok' : 'once-status-dis'}">${s.status}</span>
+        </label>
+      `).join('');
+
+      // Auto-selecteer als er maar 1 resultaat is
+      if (data.sims.length === 1) {
+        document.querySelector('input[name="onceSim"]').checked = true;
+        onceSelectRow(0);
+      }
+
+      results.style.display = 'block';
+    } catch (e) {
+      status.innerHTML = '<span style="color:#f87171">Fout: ' + e.message + '</span>';
+    }
+  }
+
+  function onceSelectRow(i) {
+    document.querySelectorAll('.once-sim-row').forEach(r => r.classList.remove('selected'));
+    document.getElementById('once-row-' + i)?.classList.add('selected');
+  }
+
+  async function onceConfirm() {
+    const selected = document.querySelector('input[name="onceSim"]:checked');
+    if (!selected) { alert('Selecteer eerst een SIM.'); return; }
+
+    const sim     = onceFoundSims[parseInt(selected.value)];
+    const boxName = document.getElementById('boxName')?.value?.trim();
+    const btn     = document.getElementById('onceConfirmBtn');
+    const status  = document.getElementById('onceConfirmStatus');
+
+    if (!boxName) { alert('Vul eerst de box naam in — die wordt als label gebruikt.'); return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Bezig...';
+    status.innerHTML = '';
+
+    try {
+      // 1. Label zetten in 1NCE
+      const r = await fetch('/api/once/sim/' + encodeURIComponent(sim.iccid) + '/label', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ label: boxName })
+      });
+      const data = await r.json();
+      if (!data.ok) throw new Error(data.error);
+
+      // 2. ICCID + IP prefillen in de gateway asset card
+      const gatewayCard = document.querySelector('#amDefaultAssets [data-key="gateway"]');
+      if (gatewayCard) {
+        const iccidInput = gatewayCard.querySelector('[data-field="var_SIM ICCID"]');
+        const ipInput    = gatewayCard.querySelector('[data-field="var_SIM IP"]');
+        if (iccidInput) iccidInput.value = sim.iccid;
+        if (ipInput)    ipInput.value    = sim.ip;
+      }
+
+      status.innerHTML = '<span style="color:#4ade80">✅ Label ingesteld op &ldquo;' + boxName + '&rdquo; · ICCID + IP ingevuld in gateway card.</span>';
+    } catch (e) {
+      status.innerHTML = '<span style="color:#f87171">❌ ' + e.message + '</span>';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Bevestigen';
+    }
+  }
 
   // Start
   init();

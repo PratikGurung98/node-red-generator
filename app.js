@@ -11,6 +11,57 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ─── 1NCE helpers ────────────────────────────────────────────────────────────
+const ONCE_API = 'https://api.1nce.com/management-api';
+let onceTokenCache = null; // { token, expiresAt }
+
+async function onceGetToken() {
+  // Geef cached token terug als nog geldig (met 60s marge)
+  if (onceTokenCache && Date.now() < onceTokenCache.expiresAt - 60_000) {
+    return onceTokenCache.token;
+  }
+  const cfg = JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8'));
+  if (!cfg.once) throw new Error('Geen 1NCE credentials gevonden in config.json');
+  const basicAuth = Buffer.from(`${cfg.once.username}:${cfg.once.password}`).toString('base64');
+  const r = await fetch(`${ONCE_API}/oauth/token`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Basic ${basicAuth}`,
+      'Content-Type':  'application/json',
+      'Accept':        'application/json'
+    },
+    body: JSON.stringify({ grant_type: 'client_credentials' })
+  });
+  if (!r.ok) throw new Error(`1NCE auth mislukt: ${r.status} ${await r.text()}`);
+  const data = await r.json();
+  onceTokenCache = {
+    token:     data.access_token,
+    expiresAt: Date.now() + (data.expires_in ?? 3600) * 1000
+  };
+  return onceTokenCache.token;
+}
+
+async function onceFetchAllSims() {
+  const token = await onceGetToken();
+  let page = 1;
+  const pageSize = 100;
+  let all = [];
+  while (true) {
+    const r = await fetch(`${ONCE_API}/v1/sims?page=${page}&pageSize=100`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!r.ok) throw new Error(`1NCE SIM lijst mislukt: ${r.status}`);
+    const data = await r.json();
+    const sims = Array.isArray(data) ? data : (data.sims ?? data.data ?? []);
+    all = all.concat(sims);
+    // Stop als we minder dan een volle pagina terugkrijgen
+    if (sims.length < pageSize) break;
+    page++;
+  }
+  return all;
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 // DB routes
 app.use('/api/db', dbRoutes);
 
@@ -197,6 +248,52 @@ app.post('/api/print', async (req, res) => {
     res.status(500).json({ ok: false, error: err.message });
   }
 });
+
+// ─── 1NCE routes ─────────────────────────────────────────────────────────────
+
+// Zoek SIMs op gedeeltelijke ICCID  →  GET /api/once/sim?q=123456
+app.get('/api/once/sim', async (req, res) => {
+  const q = (req.query.q ?? '').trim();
+  if (!q) return res.json({ ok: false, error: 'q parameter verplicht' });
+  try {
+    const sims = await onceFetchAllSims();
+    const matches = sims
+      .filter(s => (s.iccid ?? '').includes(q))
+      .map(s => ({
+        iccid:  s.iccid,
+        label:  s.label ?? '',
+        ip:     s.ip_address ?? s.ipAddress ?? '',
+        status: s.status ?? ''
+      }));
+    res.json({ ok: true, sims: matches });
+  } catch (err) {
+    console.error(err);
+    res.json({ ok: false, error: err.message });
+  }
+});
+
+// Zet label op een SIM  →  PUT /api/once/sim/:iccid/label
+app.put('/api/once/sim/:iccid/label', async (req, res) => {
+  const { iccid } = req.params;
+  const { label }  = req.body;
+  if (!label) return res.json({ ok: false, error: 'label verplicht' });
+  try {
+    const token = await onceGetToken();
+    // 1NCE gebruikt POST /v1/sims met een array voor updates
+    const r = await fetch(`${ONCE_API}/v1/sims`, {
+      method:  'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body:    JSON.stringify([{ iccid, label }])
+    });
+    if (!r.ok) throw new Error(`1NCE label update mislukt: ${r.status} ${await r.text()}`);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.json({ ok: false, error: err.message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 app.post('/api/generate', (req, res) => {
   try {
