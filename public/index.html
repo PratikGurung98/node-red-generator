@@ -1050,6 +1050,11 @@
       const naamField = document.querySelector(`#device-${idx} [name="naam"]`);
       if (naamField && d.naam) naamField.value = d.naam;
 
+      // Asset ID genereren — TE BEPALEN heeft geen decoder dus amGenerateDeviceCards
+      // wordt nooit aangeroepen; vul het Dev-veld hier expliciet
+      const teBepAsset = document.querySelector(`#device-${idx} [name="assetId_0"]`);
+      if (teBepAsset && !teBepAsset.value) teBepAsset.value = generateAssetId(50 + idx * 10);
+
       // Badge aanpassen naar "TE BEPALEN"
       const badge = document.querySelector(`#device-${idx} .comm-badge`);
       if (badge) {
@@ -1108,17 +1113,32 @@
       });
     }
 
-    // TA en Fases direct invullen in asset manager cards
-    if (d._ta) {
-      document.querySelectorAll(`[data-device-idx="${idx}"] [data-field="var_TA"]`).forEach(el => {
-        el.value = d._ta;
-      });
-    }
-    if (d._fases) {
-      document.querySelectorAll(`[data-device-idx="${idx}"] [data-field="var_Fases"]`).forEach(el => {
-        el.value = String(d._fases);
-      });
-    }
+    // Asset-manager cards vullen: Name, TA, Fases
+    // Cards bestaan nu (onTemplateChange/selectCombo liep synchroon)
+    const cards   = document.querySelectorAll(`[data-device-idx="${idx}"]`);
+    const namen   = (d._kanaalNamen && d._kanaalNamen.length) ? d._kanaalNamen : (d.naam ? [d.naam] : []);
+    const taArr   = d._taPerKanaal    || (d._ta    ? [d._ta]    : []);
+    const fasesArr = d._fasesPerKanaal || (d._fases ? [d._fases] : []);
+
+    cards.forEach((card, ci) => {
+      // Name
+      const nameField = card.querySelector('[data-field="name"]');
+      if (nameField && !nameField.value) nameField.value = namen[ci] || namen[0] || d.naam || '';
+
+      // TA
+      const ta = taArr[ci] ?? taArr[0];
+      if (ta) {
+        const e = card.querySelector('[data-field="var_TA"]');
+        if (e && !e.value) e.value = ta;
+      }
+
+      // Fases
+      const fa = fasesArr[ci] ?? fasesArr[0];
+      if (fa || fa === 0) {
+        const e = card.querySelector('[data-field="var_Fases"]');
+        if (e && !e.value) e.value = String(fa);
+      }
+    });
   }
 
   function removeDevice(idx) {

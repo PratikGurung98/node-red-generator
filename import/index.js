@@ -71,8 +71,8 @@ function verwerkDevice(device, mappings) {
       meterTypeId: '',
       meterCategory: '',
       enerseeDataTypes: [],
-      _ta: null,
-      _fases: null
+      _ta: device.ta || null,
+      _fases: device.fases || null
     }];
   }
 
@@ -109,7 +109,10 @@ function verwerkDevice(device, mappings) {
       meterCategory: '',
       enerseeDataTypes: [],
       _ta: null,
-      _fases: null
+      _fases: null,
+      // per-kanaal TA/Fases zodat de frontend elke asset-card juist kan vullen
+      _taPerKanaal: kanalen.map(k => (typeof k === 'object' ? (k.ta || null) : null)),
+      _fasesPerKanaal: kanalen.map(k => (typeof k === 'object' ? (k.fases || null) : null))
     }];
   }
 
@@ -153,8 +156,8 @@ function verwerkDevice(device, mappings) {
     meterTypeId: '',
     meterCategory: '',
     enerseeDataTypes: [],
-    _ta: null,
-    _fases: null
+    _ta: device.ta || null,
+    _fases: device.fases || null
   }];
 }
 
