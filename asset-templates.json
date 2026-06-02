@@ -676,6 +676,17 @@
       }
     ]
   },
+  "O_TH_LHT52_LORA": {
+    "assets": [
+      {
+        "role": "communicating",
+        "typeNumber": "Dragino LHT52",
+        "pictureUrl": "https://www.dragino.com/media/catalog/product/cache/1/image/9df78eab33525d08d6e5fb8d27136e95/l/h/lht52_1.jpg",
+        "varProps": ["Serial Number", "EUI", "APP KEY", "Password"],
+        "printCount": 2
+      }
+    ]
+  },
   "E_630ROG_WAVE_TCP": {
     "assets": [
       {
