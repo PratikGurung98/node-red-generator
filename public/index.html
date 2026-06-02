@@ -1216,6 +1216,82 @@
 
   // ── Generate flow ─────────────────────────────────────────────────────────
 
+  // ── QA validatie ───────────────────────────────────────────────────────────
+  // Centrale check vóór Flow- of SQL-generatie. Returnt true als alles OK is.
+  // Blokkerende fouten → alert + false. Waarschuwingen → confirm (gebruiker mag door).
+  function validateBeforeGenerate({ requireDevices = true } = {}) {
+    const boxName             = document.getElementById('boxName').value.trim();
+    const gatewayAssetId      = document.getElementById('gatewayAssetId').value.trim();
+    const gatewayMeterAssetId = document.getElementById('gatewayMeterAssetId').value.trim();
+    const gatewayMeterNaam    = document.getElementById('gatewayMeterNaam').value.trim();
+    const devices             = collectDevices();
+
+    // ── Blokkerend ──
+    if (!boxName) { alert('Vul eerst de box naam in.'); return false; }
+
+    // Gateway moet in de Asset Manager config aangemaakt zijn (asset-ID's gevuld)
+    if (!gatewayAssetId || !gatewayMeterAssetId) {
+      alert('Geen gateway in de configuratie.\n\nKlik eerst op "Standaard Vlegelbox items" of vul de Vlegelbox Asset ID + Gateway Meter Asset ID handmatig in.');
+      return false;
+    }
+
+    // Gateway Meter naam verplicht (= ReadableName in dbo.Meters + node-redSTART)
+    if (!gatewayMeterNaam) {
+      alert('Vul een Gateway Meter naam in (het veld na "Gateway_").\n\nZonder deze naam kan de Node-RED flow en SQL niet correct gegenereerd worden.');
+      return false;
+    }
+
+    if (requireDevices && devices.length === 0) {
+      alert('Voeg minstens 1 device toe.'); return false;
+    }
+
+    for (const d of devices) {
+      if (!d.template) { alert('Selecteer een template voor elk device.'); return false; }
+      if (!d.assetId)  { alert('Vul een asset ID in voor elk device.'); return false; }
+      if (d.commType === 'lorawan' && !d.deveui) { alert('Vul een DevEUI in voor elk LoRaWAN device.'); return false; }
+      if (d.commType === 'modbus' && (!d.slaveAddress || isNaN(d.slaveAddress))) {
+        alert('Vul een geldig slave adres in (1-247) voor elk Modbus device.'); return false;
+      }
+    }
+
+    // ── Dubbele asset-ID's binnen de box (blokkerend) ──
+    const allAssetIds = [gatewayAssetId, gatewayMeterAssetId];
+    devices.forEach(d => (d.assetIds || []).forEach(a => { if (a) allAssetIds.push(a); }));
+    const dupAssets = allAssetIds.filter((a, i) => allAssetIds.indexOf(a) !== i);
+    if (dupAssets.length) {
+      alert('Dubbele asset-ID(s) gevonden in deze box:\n\n' + [...new Set(dupAssets)].join('\n') + '\n\nElke asset-ID moet uniek zijn.');
+      return false;
+    }
+
+    // ── Gateway Meter Asset ID == Vlegelbox Asset ID (waarschuwing) ──
+    if (gatewayAssetId === gatewayMeterAssetId) {
+      if (!confirm('Let op: de Vlegelbox Asset ID en de Gateway Meter Asset ID zijn identiek.\n\nDit zijn normaal twee verschillende assets. Verwisseld?\n\nToch doorgaan?')) return false;
+    }
+
+    // ── Dubbele DevEUI binnen de box (blokkerend) ──
+    const deveuis = devices.filter(d => d.commType === 'lorawan' && d.deveui).map(d => d.deveui.toUpperCase());
+    const dupEui = deveuis.filter((e, i) => deveuis.indexOf(e) !== i);
+    if (dupEui.length) {
+      alert('Dubbele DevEUI gevonden in deze box:\n\n' + [...new Set(dupEui)].join('\n') + '\n\nElke LoRaWAN-device heeft een unieke DevEUI nodig.');
+      return false;
+    }
+
+    // ── Boxnaam-formaat (waarschuwing: spaties breken az CLI) ──
+    if (/\s/.test(boxName)) {
+      if (!confirm('De box naam bevat spaties. Dit kan de Azure IoT Hub provisioning (az CLI) breken.\n\nAanbevolen: gebruik underscores i.p.v. spaties.\n\nToch doorgaan?')) return false;
+    }
+
+    // ── Dubbele meetpuntnamen (waarschuwing) ──
+    const namen = [];
+    devices.forEach(d => (d.namen || []).forEach(n => { if (n) namen.push(n); }));
+    const dupNamen = namen.filter((n, i) => namen.indexOf(n) !== i);
+    if (dupNamen.length) {
+      if (!confirm('Dubbele meetpuntnaam/namen gevonden:\n\n' + [...new Set(dupNamen)].join('\n') + '\n\nToch doorgaan?')) return false;
+    }
+
+    return true;
+  }
+
   async function generate() {
     const boxName             = document.getElementById('boxName').value.trim();
     const gatewayAssetId      = document.getElementById('gatewayAssetId').value.trim();
@@ -1225,16 +1301,7 @@
     const btn = document.querySelector('.generate-btn');
     const out = document.getElementById('output');
 
-    if (!boxName)           { alert('Vul een box naam in.'); return; }
-    if (devices.length === 0) { alert('Voeg minstens 1 device toe.'); return; }
-    for (const d of devices) {
-      if (!d.template) { alert('Selecteer een template voor elk device.'); return; }
-      if (!d.assetId)  { alert('Vul een asset ID in voor elk device.'); return; }
-      if (d.commType === 'lorawan' && !d.deveui) { alert('Vul een DevEUI in.'); return; }
-      if (d.commType === 'modbus' && (!d.slaveAddress || isNaN(d.slaveAddress))) {
-        alert('Vul een geldig slave adres in (1-247).'); return;
-      }
-    }
+    if (!validateBeforeGenerate({ requireDevices: true })) return;
 
     btn.disabled = true;
     btn.textContent = 'Genereren...';
@@ -1304,6 +1371,7 @@
     const buildingId = document.getElementById('buildingSelect').value;
     if (!selectedDb || !buildingId) { alert('Selecteer eerst een DB en een gebouw.'); return; }
 
+    if (!validateBeforeGenerate({ requireDevices: true })) return;
     const btn = document.getElementById('sqlBtn');
     btn.disabled = true; btn.textContent = 'Genereren...';
 

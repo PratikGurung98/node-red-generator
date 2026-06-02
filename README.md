@@ -680,3 +680,21 @@ AM307 naam-mismatch: decoder = O_IAQ_AM307_LORA, DB-tag was O_IAQ_307AM_LORA →
 Workflow note:
 
 Nieuwe sensor toevoegen vereist GEEN parser-code wijziging: enkel entry in import-mappings.json + lib-decoder JSON in lib/lorawan/ + entry in asset-templates.json
+### Sessie 02/06/2026 (vervolg) — QA validatie voor generatie
+
+Centrale `validateBeforeGenerate()` in `public/index.html` — gedeeld door Generate Flow én Generate SQL.
+
+**Blokkerend (alert):**
+- Geen boxnaam
+- Geen gateway in config (Vlegelbox Asset ID of Gateway Meter Asset ID leeg)
+- Geen Gateway Meter naam
+- Ontbrekende template / asset-ID / DevEUI / slave-adres per device
+- Dubbele asset-ID's binnen de box (incl. de 2 gateway-ID's)
+- Dubbele DevEUI (case-insensitive)
+
+**Waarschuwing (confirm, mag bewust door):**
+- Boxnaam met spaties (breekt az CLI)
+- Gateway Meter Asset ID == Vlegelbox Asset ID (verwisseld?)
+- Dubbele meetpuntnamen
+
+1NCE-label en IoT Hub provisioning checkten al op lege boxnaam (regel 2125 / 1923) — ongewijzigd.
