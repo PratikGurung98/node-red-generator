@@ -870,6 +870,40 @@
 
     // Asset Manager cards genereren op basis van decoder
     amGenerateDeviceCards(idx);
+
+    // MeterType automatisch selecteren op basis van Tag (stabiel over DBs heen)
+    amAutoSelectMeterType(idx);
+  }
+
+  // Strip versie-suffix net als de parser (import/index.js)
+  function amStripVersion(naam) {
+    return (naam || '')
+      .replace(/_V\d+$/i, '')
+      .replace(/_\d+DEVICES$/i, '');
+  }
+
+  // Zoek het MeterType waarvan de Tag matcht met de gekozen decoder en selecteer het
+  function amAutoSelectMeterType(idx) {
+    const decoderName = document.getElementById(`decoder-val-${idx}`)?.value?.trim();
+    if (!decoderName || !allMeterTypes.length) return;
+
+    // Niet overschrijven als er al handmatig iets gekozen is
+    const current = document.getElementById(`metertype-val-${idx}`)?.value;
+    if (current) return;
+
+    const wanted = amStripVersion(decoderName);
+
+    // Exacte match op gestripte Tag eerst, anns prefix-match
+    let mt = allMeterTypes.find(m => amStripVersion(m.Tag) === wanted);
+    if (!mt) mt = allMeterTypes.find(m => amStripVersion(m.Tag).startsWith(wanted) || wanted.startsWith(amStripVersion(m.Tag)));
+    if (!mt) return;
+
+    // Vind de index in de combo-opties en selecteer
+    const options = allMeterTypes.map(m => ({ value: String(m.Id), label: `${m.Name} (${m.Tag})` }));
+    const optIdx  = options.findIndex(o => o.value === String(mt.Id));
+    if (optIdx >= 0) {
+      selectCombo(`metertype-combo-${idx}`, `metertype-val-${idx}`, optIdx);
+    }
   }
 
   // Zoek de juiste template op basis van decoder prefix

@@ -650,3 +650,33 @@ Tijdwinst: van ~3 uur naar ~30-40 min per box 🎉
 **Bugfixes deze sessie:**
 - Enersee preview/execute toonde geen rijen → verificatie SELECT toegevoegd aan buildEnerseeSQL
 - Modbus groep Y-positionering: vaste 280px → cumulatief op basis van werkelijke groephoogte (h + 60px margin)
+
+Sessie 02/06/2026 — import bugfixes, MeterType auto-select & nieuwe omgevingssensoren
+Import parser/UI bugfixes (import/index.js + public/index.html):
+
+TE BEPALEN devices kregen geen asset ID → assetId_0 veld wordt nu expliciet gevuld met gegenereerd ID (TE BEPALEN heeft geen decoder dus amGenerateDeviceCards liep niet)
+Naam werd nergens ingevuld in de Asset Manager cards → loadImportedDevice schrijft nu de meetpuntnaam naar elke asset-card (data-field="name"); per kanaal bij LoRa-multi, anders de device-naam
+Stomme toestellen kregen geen TA/Fases mee:
+
+parser: _ta/_fases worden nu ook van top-niveau gelezen (single device), niet enkel uit kanalen
+parser: LoRa-multi geeft _taPerKanaal/_fasesPerKanaal arrays door
+UI: TA/Fases per asset-card gevuld op basis van kanaal-index
+
+
+
+MeterType auto-select (public/index.html):
+
+Bij decoder-keuze (handmatig én bij import) wordt het MeterType automatisch geselecteerd via amAutoSelectMeterType
+Match op Tag (stabiel over DBs heen, want MeterTypeId verschilt per DB)
+amStripVersion strip _Vx én _NDEVICES aan beide kanten → decoder _V6 matcht tag _V1, en _2DEVICES/_3DEVICES varianten matchen dezelfde basis-tag
+Overschrijft niet als er al handmatig een MeterType gekozen is
+Triggert onMeterTypeSelected → Enersee/DataTypes laden mee
+
+Nieuwe omgevingssensoren:
+
+O_TH_LHT52_LORA (Dragino LHT52 temp + luchtvochtigheid) toegevoegd aan import-mappings.json én asset-templates.json (1 communicating asset, varProps Serial/EUI/APP KEY/Password, printCount 2)
+AM307 naam-mismatch: decoder = O_IAQ_AM307_LORA, DB-tag was O_IAQ_307AM_LORA → DB-tag hernoemd naar O_IAQ_AM307_LORA_V1 zodat auto-select matcht (geen alias-laag nodig)
+
+Workflow note:
+
+Nieuwe sensor toevoegen vereist GEEN parser-code wijziging: enkel entry in import-mappings.json + lib-decoder JSON in lib/lorawan/ + entry in asset-templates.json

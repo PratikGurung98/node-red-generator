@@ -129,6 +129,13 @@
       "lib": "O_TEMP_EM300_LORA_V1"
     },
 
+    "O_TH_LHT52_LORA": {
+      "type": "lorawan",
+      "multiKanaal": false,
+      "lib": "O_TH_LHT52_LORA_V1",
+      "_note": "Dragino LHT52 temp + luchtvochtigheid. Toegevoegd 02/06/2026."
+    },
+
     "D_LEAK_EM300_LORA": {
       "type": "lorawan",
       "multiKanaal": false,
