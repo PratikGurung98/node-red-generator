@@ -698,3 +698,46 @@ Centrale `validateBeforeGenerate()` in `public/index.html` — gedeeld door Gene
 - Dubbele meetpuntnamen
 
 1NCE-label en IoT Hub provisioning checkten al op lege boxnaam (regel 2125 / 1923) — ongewijzigd.
+
+
+### Sessie 03/06/2026 — tekst-import (devops_text parser)
+
+Tweede brontype naast JSON-import: geplakte config-tekst → automatisch JSON → bestaande pipeline.
+
+**Parser (`import/index.js`):**
+- `parseDevopsText(raw)` zet geplakte boomstructuur om naar `{ boxNaam, devices[] }` (zelfde tussenvorm als JSON-import)
+- `parseImportText(raw)` = parseDevopsText + parseImportJSON (hergebruikt verwerkDevice-keten volledig)
+- Defensief: leunt op regel-PATRONEN, niet op inspringing. Splitst op tabs, 3+ spaties én forceert breuken vóór ankers (decoder-regex, [Categorie], **TEBEPALEN, ESCT-, transport-woorden). Werkt ook als alles op 1 regel plakt.
+- Naam uit laatste (buitenste) haakjes per regel; fases uit "1 fase" / "set van 3"
+- `**TEBEPALEN` ná een decoder → toestelnaam van die decoder (geen los device)
+- Boxnaam → az-veilig gemaakt (spaties→underscores, enkel A-Z0-9_-)
+- Transport/puls-regels (Gateway, Waveshare, Doorvoer, Pulsteller, PULSCONVERSIE) genegeerd
+
+**Backend (`app.js`):**
+- POST /api/import/parse-text — ?preview=1 toont alleen tussenvorm, anders volledige verwerking
+
+**UI (`public/index.html`):**
+- Knop "Plak tekst" → textarea-paneel met Preview (toont parse-resultaat zonder laden), Direct inladen, Annuleer
+- Gedeelde applyImportResult() voor JSON- én tekst-import
+
+**Bekende grenzen / TODO:**
+- ML4 met exact 1 kanaal wordt nu platgeslagen naar single device (fout: ML4 is altijd multi). TODO: waarschuwing "ML4 gedetecteerd met enkel 1 kanaal" tonen
+- Lowercase decoders worden niet herkend (DECODER_RE eist hoofdletters)
+- Meerdere boxen in één plak niet ondersteund (pakt eerste boxnaam)
+
+### Sessie 03/06/2026 — decoder lib-audit
+
+**Norm per decoder (bevestigd):**
+- Asset-placeholder: `ASSET_PLACEHOLDER` in `const Dev = "..."`
+- Naam-placeholder: `{meetpunt naam}` (kleine letters, spatie, accolades) — `{meetpunt}` werkt ook maar is niet de norm
+- Bestandsnaam: `CATEGORIE_NAAM_PROTOCOL_Vx.json`, hoofdletters, `.json` lowercase
+- Geldige JSON-array `[{...}]`, geen kale JS, geen comment-nodes
+- Formatter-node moet ASSET/PLACEHOLDER/BEGINT bevatten (anders geen link-out)
+- Adeunis: Base64→Hex als entry, adeunis-codecs tussenstap, enkel formatter krijgt link-out
+
+**Nog te fixen (gevonden in audit):**
+- SDM72MD2_DRAG_LORA_V2.json — kale JS i.p.v. node-JSON
+- H_MULTICAL603_DRAG_LORA.jsON — kale JS + foute extensie .jsON
+- E_SDM72DM_DRAG_LORA_V2.json — hardcoded ID i.p.v. placeholder, "huurder 10" in naam
+- G_OPT_FM432_LORA_V1.json — placeholder VOER_ID_IN (geen keyword → geen link-out)
+- Placeholder-cleanup: ASSET_ID_START_MET_36 / BEGINT_MET_36 / JOUW_ASSET_ID / ASSET → ASSET_PLACEHOLDER

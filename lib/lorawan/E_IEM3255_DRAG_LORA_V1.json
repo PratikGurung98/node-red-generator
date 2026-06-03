@@ -1,19 +1,9 @@
 [
     {
-        "id": "2ad72097a67d2e18",
-        "type": "comment",
-        "z": "a9cf84f103bcc4d0",
-        "name": "Voer Vlegel ASSET ID in",
-        "info": "Het gaat hier over:\nconst Dev = \"ASSET_ID_START_MET_36\";",
-        "x": 290,
-        "y": 280,
-        "wires": []
-    },
-    {
-        "id": "bc62586603f05132",
+        "id": "7420b52c444cf7df",
         "type": "function",
-        "z": "a9cf84f103bcc4d0",
-        "name": "E_IEM3255_DRAG_LORA_V1 - {meetpunt naam}",
+        "z": "c0dcfcea1760ff7e",
+        "name": "E_IEM3255_DRAG_LORA_V1 - {meetpunt}",
         "func": "// --- Node-RED Function node: Decode & map Dragino RS485-LB/LS uplink (Schneider iEM) ---\n\nconst Dev = \"ASSET_ID_START_MET_36\";\n\n// 1) Schneider mapping in dezelfde volgorde als AT+COMMAND1..7\nvar channels = [\n    { prop: \"total_system_power_W\", reg: 0x0BF3, id: 4200 }, // Float32 (kW) maar naam blijft _W\n    { prop: \"total_system_var_VAr\", reg: 0x0BFB, id: 4300 }, // Float32 (kVAr)\n    { prop: \"total_export_kWh\", reg: 0xB02D, id: 4500 }, // Float32 (kWh)\n    { prop: \"total_import_kWh\", reg: 0xB02B, id: 4600 }, // Float32 (kWh)\n    { prop: \"total_export_kVArh\", reg: 0xB031, id: 4700 }, // Float32 (kVArh)\n    { prop: \"total_import_kVArh\", reg: 0xB02F, id: 4800 }, // Float32 (kVArh)\n    { prop: \"total_system_power_factor\", reg: 0x0C0B, id: 4400 }, // Float32 (PF)\n];\n\n// 2) Geen scaling: units zijn “historisch fout benoemd” maar overal consistent als kW/kVAr\nvar scaleBy1000 = [];\n\n// 3) Decode Base64-payload naar Buffer\nvar buf = (typeof msg.payload === \"string\")\n    ? Buffer.from(msg.payload, \"base64\")\n    : msg.payload;\n\nif (!Buffer.isBuffer(buf) || buf.length < 7) {\n    node.error(\"Invalid payload\", msg);\n    return null;\n}\n\n// 4) Lees header en bepaal offset\nvar HEADER_LEN = 3;\nvar dataLen = buf.length - HEADER_LEN;\nvar floatCount = Math.floor(dataLen / 4);\n\n// 5) Helper om een Big-Endian float32 te lezen en afronden\nfunction readF(off) {\n    if (off + 4 > buf.length) { return null; }\n    var v = buf.readFloatBE(off);\n    if (isNaN(v)) { return null; }\n    return Math.round(v * 100) / 100;\n}\n\n// 6) Decode battery (bytes 0–1) en alle float-slots\nvar measurements = {\n    battery: (((buf[0] << 8) | buf[1]) & 0x7fff) / 1000\n};\n\nfor (var i = 0; i < floatCount && i < channels.length; i++) {\n    var off = HEADER_LEN + i * 4;\n    measurements[channels[i].prop] = readF(off);\n}\n\n// 7) Bouw de standaardstructuur\nvar mid = global.get(\"mid\") || 0;\n\nvar result = {\n    MID: mid,\n    D: [{\n        Dev: Dev,\n        TS: msg.time ? new Date(msg.time).toISOString() : undefined,\n        ED: [],\n        MD: []\n    }]\n};\n\n// 8) Vul MD\nchannels.forEach(function (ch) {\n    var val = measurements[ch.prop];\n    if (val != null) {\n        // scaling blijft leeg, dus dit doet niks\n        if (scaleBy1000.indexOf(ch.id) !== -1) {\n            val = Math.round((val / 1000) * 1000) / 1000;\n        }\n        result.D[0].MD.push({ Id: ch.id, Val: val });\n    }\n});\n\n// batterij\nresult.D[0].MD.push({ Id: 7200, Val: measurements.battery });\n\n// 9) Optioneel: snr/rssi\n[[\"snr\", 5400], [\"rssi\", 5500]].forEach(function (item) {\n    var key = item[0], id = item[1];\n    if (msg[key] !== undefined) {\n        result.D[0].MD.push({ Id: id, Val: parseFloat(msg[key]) });\n    }\n});\n\n// spreadFactor uit msg.dr\nif (msg.dr && msg.dr.spreadFactor !== undefined) {\n    result.D[0].MD.push({ Id: 5200, Val: parseFloat(msg.dr.spreadFactor) });\n}\n\n// 10) MID increment + return\nglobal.set(\"mid\", mid + 1);\nmsg.payload = result;\nreturn msg;\n",
         "outputs": 1,
         "timeout": 0,
@@ -21,8 +11,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 370,
-        "y": 320,
+        "x": 1130,
+        "y": 440,
         "wires": [
             []
         ]

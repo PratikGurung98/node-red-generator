@@ -294,11 +294,25 @@ app.put('/api/once/sim/:iccid/label', async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-const { parseImportJSON } = require('./import');
+const { parseImportJSON, parseImportText, parseDevopsText } = require('./import');
 
 app.post('/api/import/parse', (req, res) => {
   try {
     const result = parseImportJSON(req.body);
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    res.status(400).json({ ok: false, error: err.message });
+  }
+});
+
+// Tekst-import (geplakte config-boom). ?preview=1 → alleen tussenvorm tonen.
+app.post('/api/import/parse-text', (req, res) => {
+  try {
+    const raw = req.body && req.body.text;
+    if (req.query.preview) {
+      return res.json({ ok: true, preview: parseDevopsText(raw) });
+    }
+    const result = parseImportText(raw);
     res.json({ ok: true, ...result });
   } catch (err) {
     res.status(400).json({ ok: false, error: err.message });

@@ -1,0 +1,258 @@
+[
+  {
+    "id": "2e8f8d2a28858252",
+    "type": "group",
+    "z": "db5d685c534200a1",
+    "name": "E_630ROG_WAVE_TCP_V1 - {meetpunt}",
+    "style": {
+      "label": true,
+      "fill": "#5caa7e",
+      "color": "#ffffff"
+    },
+    "nodes": [
+      "14fa9585c9027275",
+      "2a13021468d16015",
+      "74526ff406de121c",
+      "06a3c5b2814ddf8b",
+      "54ca1dcde5ae3402",
+      "87c69444f7410941",
+      "698c3a0b568ad07b",
+      "f52c09e11f6a0e68",
+      "78781a399f7c32b0"
+    ],
+    "x": 354,
+    "y": 979,
+    "w": 1272,
+    "h": 182
+  },
+  {
+    "id": "14fa9585c9027275",
+    "type": "modbus-getter",
+    "z": "db5d685c534200a1",
+    "g": "2e8f8d2a28858252",
+    "name": "Read",
+    "showStatusActivities": true,
+    "showErrors": true,
+    "showWarnings": true,
+    "logIOActivities": false,
+    "unitid": "11",
+    "dataType": "InputRegister",
+    "adr": "0",
+    "quantity": "83",
+    "server": "f0b64134ee04eb00",
+    "useIOFile": false,
+    "ioFile": "",
+    "useIOForPayload": false,
+    "emptyMsgOnFail": true,
+    "keepMsgProperties": false,
+    "delayOnStart": false,
+    "startDelayTime": "",
+    "x": 470,
+    "y": 1120,
+    "wires": [
+      [
+        "54ca1dcde5ae3402"
+      ],
+      []
+    ]
+  },
+  {
+    "id": "2a13021468d16015",
+    "type": "function",
+    "z": "db5d685c534200a1",
+    "g": "2e8f8d2a28858252",
+    "name": "Parse SDM630ROG",
+    "func": "const buffer = new ArrayBuffer(4);\nconst intView = new Uint32Array(buffer);\nconst floatView = new Float32Array(buffer);\nvar combined = 0;\nvar data = {};\n\n// U1\ncombined = (msg.payload[0] << 16) | msg.payload[1];\nintView[0] = combined;\nvar U1 = floatView[0].toFixed(3);\ndata[\"U1\"] = U1;\n\n// U2\ncombined = (msg.payload[2] << 16) | msg.payload[3];\nintView[0] = combined;\nvar U2 = floatView[0].toFixed(3);\ndata[\"U2\"] = U2;\n\n// U3\ncombined = (msg.payload[4] << 16) | msg.payload[5];\nintView[0] = combined;\nvar U3 = floatView[0].toFixed(3);\ndata[\"U3\"] = U3;\n\n// I1\ncombined = (msg.payload[6] << 16) | msg.payload[7];\nintView[0] = combined;\nvar I1 = floatView[0].toFixed(3);\ndata[\"I1\"] = I1;\n\n// I2\ncombined = (msg.payload[8] << 16) | msg.payload[9];\nintView[0] = combined;\nvar I2 = floatView[0].toFixed(3);\ndata[\"I2\"] = I2;\n\n// I3\ncombined = (msg.payload[10] << 16) | msg.payload[11];\nintView[0] = combined;\nvar I3 = floatView[0].toFixed(3);\ndata[\"I3\"] = I3;\n\n// P1\ncombined = (msg.payload[12] << 16) | msg.payload[13];\nintView[0] = combined;\nvar P1 = floatView[0].toFixed(3);\ndata[\"P1\"] = P1;\n\n// P2\ncombined = (msg.payload[14] << 16) | msg.payload[15];\nintView[0] = combined;\nvar P2 = floatView[0].toFixed(3);\ndata[\"P2\"] = P2;\n\n// P3\ncombined = (msg.payload[16] << 16) | msg.payload[17];\nintView[0] = combined;\nvar P3 = floatView[0].toFixed(3);\ndata[\"P3\"] = P3;\n\n// S1\ncombined = (msg.payload[18] << 16) | msg.payload[19];\nintView[0] = combined;\nvar S1 = floatView[0].toFixed(3);\ndata[\"S1\"] = S1;\n\n// S2\ncombined = (msg.payload[20] << 16) | msg.payload[21];\nintView[0] = combined;\nvar S2 = floatView[0].toFixed(3);\ndata[\"S2\"] = S2;\n\n// S3\ncombined = (msg.payload[22] << 16) | msg.payload[23];\nintView[0] = combined;\nvar S3 = floatView[0].toFixed(3);\ndata[\"S3\"] = S3;\n\n// Q1\ncombined = (msg.payload[24] << 16) | msg.payload[25];\nintView[0] = combined;\nvar Q1 = floatView[0].toFixed(3);\ndata[\"Q1\"] = Q1;\n\n// Q2\ncombined = (msg.payload[26] << 16) | msg.payload[27];\nintView[0] = combined;\nvar Q2 = floatView[0].toFixed(3);\ndata[\"Q2\"] = Q2;\n\n// Q3\ncombined = (msg.payload[28] << 16) | msg.payload[29];\nintView[0] = combined;\nvar Q3 = floatView[0].toFixed(3);\ndata[\"Q3\"] = Q3;\n\n// PF1\ncombined = (msg.payload[30] << 16) | msg.payload[31];\nintView[0] = combined;\ndata[\"Q1\"] = floatView[0].toFixed(3);\n\n// PF2\ncombined = (msg.payload[32] << 16) | msg.payload[33];\nintView[0] = combined;\ndata[\"Q2\"] = floatView[0].toFixed(3);\n\n// PF3\ncombined = (msg.payload[34] << 16) | msg.payload[35];\nintView[0] = combined;\ndata[\"Q3\"] = floatView[0].toFixed(3);\n\n// IT\ncombined = (msg.payload[48] << 16) | msg.payload[49];\nintView[0] = combined;\ndata[\"IT\"] = floatView[0].toFixed(3);\n\n// PT\ncombined = (msg.payload[52] << 16) | msg.payload[53];\nintView[0] = combined;\ndata[\"PT\"] = floatView[0].toFixed(3);\n\n// ST\ncombined = (msg.payload[56] << 16) | msg.payload[57];\nintView[0] = combined;\ndata[\"ST\"] = floatView[0].toFixed(3);\n\n// QT\ncombined = (msg.payload[60] << 16) | msg.payload[61];\nintView[0] = combined;\ndata[\"QT\"] = floatView[0].toFixed(3);\n\n// PFT\ncombined = (msg.payload[62] << 16) | msg.payload[63];\nintView[0] = combined;\ndata[\"PFT\"] = floatView[0].toFixed(3);\n\n// PimpT\ncombined = (msg.payload[72] << 16) | msg.payload[73];\nintView[0] = combined;\ndata[\"PimpT\"] = floatView[0].toFixed(3);\n\n// PexpT\ncombined = (msg.payload[74] << 16) | msg.payload[75];\nintView[0] = combined;\ndata[\"PexpT\"] = floatView[0].toFixed(3);\n\n// QimpT\ncombined = (msg.payload[76] << 16) | msg.payload[77];\nintView[0] = combined;\ndata[\"QimpT\"] = floatView[0].toFixed(3);\n\n// QexpT\ncombined = (msg.payload[78] << 16) | msg.payload[79];\nintView[0] = combined;\ndata[\"QexpT\"] = floatView[0].toFixed(3);\n\nvar nmsg = {};\nnmsg.topic = 'telemetry';\nnmsg.payload = data;\n\nreturn nmsg;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 820,
+    "y": 1120,
+    "wires": [
+      [
+        "74526ff406de121c"
+      ]
+    ]
+  },
+  {
+    "id": "74526ff406de121c",
+    "type": "json",
+    "z": "db5d685c534200a1",
+    "g": "2e8f8d2a28858252",
+    "name": "Conv",
+    "property": "payload",
+    "action": "obj",
+    "pretty": false,
+    "x": 1010,
+    "y": 1120,
+    "wires": [
+      [
+        "06a3c5b2814ddf8b"
+      ]
+    ]
+  },
+  {
+    "id": "06a3c5b2814ddf8b",
+    "type": "function",
+    "z": "db5d685c534200a1",
+    "g": "2e8f8d2a28858252",
+    "name": "E_630ROG_WAVE_TCP_V1",
+    "func": "// Haal de globale MID variabele op (message ID)\nlet mid = global.get(\"mid\");\n\n// Stel de constante Dev in\nconst Dev = \"ASSET\";\n\n// Definieer de mapping van datatypes naar ID's\nconst idMapping = {\n    \"U1\": 3000,\n    \"U2\": 3100,\n    \"U3\": 3200,\n    \"I1\": 3300,\n    \"I2\": 3400,\n    \"I3\": 3500,\n    \"P1\": 3600,\n    \"P2\": 3700,\n    \"P3\": 3800,\n    \"Q1\": 3900,\n    \"Q2\": 4000,\n    \"Q3\": 4100,\n    \"PT\": 4200,\n    \"QT\": 4300,\n    \"PFT\": 4400,\n    \"PExpT\": 4500,\n    \"PImpT\": 4600\n};\n\n//Maak mapping case-insensitive door keys ook in lowercase aan te spreken\nconst mappingLower = {};\nObject.keys(idMapping).forEach(k => mappingLower[k.toLowerCase()] = idMapping[k]);\n\n// Begin met het resultaat-object\nlet result = {\n    MID: mid,\n    D: [\n        {\n            Dev: Dev,\n            ED: [],\n            MD: []\n        }\n    ]\n};\n\n// Payload van binnenkomend bericht\nconst payloadData = msg.payload || {};\nif (typeof payloadData !== \"object\") {\n    node.warn(\"msg.payload is geen object\");\n}\n\n// Loop door payload keys\nfor (let key in payloadData) {\n    \n    if (!payloadData.hasOwnProperty(key)) continue;\n\n    // probeer eerst exacte key, anders case-insensitive match\n    let id = idMapping[key];\n    if (typeof id === \"undefined\") {\n        id = mappingLower[key.toLowerCase()];\n    }\n\n    if (typeof id !== \"undefined\") {\n        // Zorg dat de waarde een getal wordt: vervang komma -> punt en parse\n        let rawVal = payloadData[key];\n        // Als waarde een array / object / null is, skip\n        if (rawVal === null || typeof rawVal === \"object\") {\n            node.warn(`Overslaan ${key}: waarde is geen primitief (${typeof rawVal})`);\n            continue;\n        }\n        let valStr = String(rawVal).trim().replace(\",\", \".\");\n        let num = parseFloat(valStr);\n        if (!Number.isFinite(num)) {\n            node.warn(`Ongeldige numerieke waarde voor ${key}: \"${rawVal}\" — overslaan`);\n            continue;\n        }\n\n        result.D[0].MD.push({\n            Id: id,\n            Val: num\n        });\n\n    } else {\n        // key niet in mapping \n        node.debug(`Key niet in mapping: ${key}`);\n    }\n}\n\n// Voeg een timestamp toe in het juiste formaat\nresult.D[0].TS = new Date().toISOString();\n\n// Alleen verhogen als we items toegevoegd hebben\nif (result.D[0].MD.length > 0) {\n    global.set(\"mid\", mid + 1);\n} \n\n// Stel de nieuwe payload in\nmsg.payload = result;\nmsg.queque = \"success\"\nreturn msg;\n",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 1200,
+    "y": 1120,
+    "wires": [
+      [
+        "698c3a0b568ad07b",
+        "f52c09e11f6a0e68"
+      ]
+    ]
+  },
+  {
+    "id": "54ca1dcde5ae3402",
+    "type": "function",
+    "z": "db5d685c534200a1",
+    "g": "2e8f8d2a28858252",
+    "name": "catch error",
+    "func": "if (msg.error) {\n  msg.failReason = msg.error;\n  return [null, msg];\n}\n\nif (!Array.isArray(msg.payload)) {\n  msg.failReason = `payload_not_array (${typeof msg.payload})`;\n  return [null, msg];\n}\n\nif (msg.payload.length !== 83) {\n  msg.failReason = `bad_length (${msg.payload.length})`;\n  return [null, msg];\n}\n\nif (msg.payload.every(v => v === 0)) {\n  msg.failReason = \"all_zero_payload\";\n  return [null, msg];\n}\n\nreturn [msg, null];\n",
+    "outputs": 2,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 610,
+    "y": 1120,
+    "wires": [
+      [
+        "2a13021468d16015"
+      ],
+      [
+        "87c69444f7410941"
+      ]
+    ]
+  },
+  {
+    "id": "87c69444f7410941",
+    "type": "function",
+    "z": "db5d685c534200a1",
+    "g": "2e8f8d2a28858252",
+    "name": "error handling",
+    "func": "// ===== Modbus FAIL -> ED event wrapper =====\n\n// 1) MID\nlet mid = global.get(\"mid\") || 0;\n\n// 2) Device\n// Vul je echte asset-id in of haal uit msg (als je die meegeeft op fail-pad)\nconst Dev = \"ASSET\";\n\n// 3) Event Id voor \"modbus failure\" (kies zelf een vrije ID)\nconst MODBUS_FAIL_EVENT_ID = 7199;\n\n// 4) Reason bepalen (prioriteit: msg.failReason -> msg.error -> algemene fallback)\nlet reason = msg.failReason || msg.error || \"MODBUS_FAIL\";\n\n// 5) Bouw extra context (unitId, queue length, topic, messageId)\nconst unitId = msg.unitId ?? msg.queueUnitId ?? (msg.queueLengthByUnitId?.unitId);\nconst qLen =\n  msg.queueLengthByUnitId?.queueLength ??\n  msg.queueLength ??\n  undefined;\n\nlet details = [];\nif (unitId !== undefined) details.push(`unitId=${unitId}`);\nif (qLen !== undefined) details.push(`queueLen=${qLen}`);\nif (msg.topic) details.push(`topic=${msg.topic}`);\nif (msg.messageId) details.push(`messageId=${msg.messageId}`);\n\nlet val = String(reason);\nif (details.length) val += ` | ${details.join(\", \")}`;\n\n// 6) Wrapper result\nconst result = {\n  MID: mid,\n  D: [\n    {\n      Dev: Dev,\n      TS: new Date().toISOString(),\n      ED: [\n        {\n          Id: MODBUS_FAIL_EVENT_ID,\n          Val: val,   // <-- reden als tekst\n          Sev: 4\n        }\n      ],\n      MD: []\n    }\n  ]\n};\n\n// 7) MID ophogen (ik doe dit altijd voor fail-events)\nglobal.set(\"mid\", mid + 1);\n\n// 8) Output\nmsg.payload = result;\nmsg.topic = \"telemetry\"; // als je dit verwacht downstream (optioneel)\nmsg.queque = \"fail\"\nreturn msg;\n",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 1160,
+    "y": 1080,
+    "wires": [
+      [
+        "698c3a0b568ad07b",
+        "f52c09e11f6a0e68"
+      ]
+    ]
+  },
+  {
+    "id": "698c3a0b568ad07b",
+    "type": "function",
+    "z": "db5d685c534200a1",
+    "g": "2e8f8d2a28858252",
+    "name": "go2Next || retry",
+    "func": "const DELAY_MS = 7500;\nconst MAX_RETRY = 6;\n\nconst Dev = \"ASSET\";          \nconst RETRY_WARN_EVENT_ID = 7198;          \n\nlet q = (msg.queque || \"\").toLowerCase();\nlet retry = global.get(\"retry\") || 0;\n\nfunction sendLater(out1, out2, out3) {\n  setTimeout(() => node.send([out1, out2, out3]), DELAY_MS);\n}\n\n// ---- FAIL ----\nif (q === \"fail\") {\n  retry += 1;\n  global.set(\"retry\", retry);\n\n  // retry < 5 => output 1 (\"go\")\n  if (retry < MAX_RETRY) {\n    const m1 = {\n      ...msg,\n      action: \"go\",\n      retry\n    };\n    sendLater(m1, null, null);\n    return;\n  }\n\n  // retry >= 5 => na 5 sec: reset + output 2 (\"stop/failover\")\n  global.set(\"retry\", 0);\n\n  const m2 = {\n    ...msg,\n    action: \"stop\",\n    retry: MAX_RETRY\n  };\n\n  sendLater(null, m2, null);\n  return;\n}\n\n// ---- SUCCESS ----\nif (q === \"success\") {\n  const retriesUsed = retry; \n\n  // Case A: success met <=1 retry => gewoon output 2 na 5 sec, reset\n  if (retriesUsed <= 1) {\n    global.set(\"retry\", 0);\n\n    const m2 = {\n      ...msg,\n      action: \"ok\",\n      retry: 0\n    };\n\n    sendLater(null, m2, null);\n    return;\n  }\n\n  // Case B: success maar met >1 retries => output 2 én output 3, reset\n  global.set(\"retry\", 0);\n\n  // Output 2: control/success message\n  const m2 = {\n    ...msg,\n    action: \"ok_but_retried\",\n    info: `success but retried ${retriesUsed} times`,\n    retriesUsed,\n    retry: 0\n  };\n\n  // Output 3: ED event payload (severity 2)\n  const mid = global.get(\"mid\") || 0;\n  global.set(\"mid\", mid + 1);\n\n  const m3 = {\n    topic: \"telemetry\",\n    queque: \"event\",\n    payload: {\n      MID: mid,\n      D: [\n        {\n          Dev,\n          TS: new Date().toISOString(),\n          ED: [\n            {\n              Id: RETRY_WARN_EVENT_ID,\n              Val: `success but retried ${retriesUsed} times`,\n              Sev: 2\n            }\n          ],\n          MD: []\n        }\n      ]\n    }\n  };\n\n  sendLater(null, m2, m3);\n  return;\n}\n\nconst m2 = {\n  ...msg,\n  action: \"unknown_queque\",\n  retry\n};\nsendLater(null, m2, null);\nreturn;\n",
+    "outputs": 3,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 1440,
+    "y": 1080,
+    "wires": [
+      [
+        "14fa9585c9027275"
+      ],
+      [],
+      [
+        "f52c09e11f6a0e68"
+      ]
+    ]
+  },
+  {
+    "id": "f52c09e11f6a0e68",
+    "type": "link out",
+    "z": "db5d685c534200a1",
+    "g": "2e8f8d2a28858252",
+    "name": "LINK2IOTHUB",
+    "mode": "link",
+    "links": [
+      "42ad2686b1983099"
+    ],
+    "x": 1585,
+    "y": 1020,
+    "wires": []
+  },
+  {
+    "id": "78781a399f7c32b0",
+    "type": "inject",
+    "z": "db5d685c534200a1",
+    "g": "2e8f8d2a28858252",
+    "name": "15min trigger",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "repeat": "900",
+    "crontab": "",
+    "once": true,
+    "onceDelay": "5",
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "x": 480,
+    "y": 1020,
+    "wires": [
+      [
+        "14fa9585c9027275"
+      ]
+    ]
+  },
+  {
+    "id": "f0b64134ee04eb00",
+    "type": "modbus-client",
+    "name": "Waveshare",
+    "clienttype": "tcp",
+    "bufferCommands": true,
+    "stateLogEnabled": false,
+    "queueLogEnabled": false,
+    "failureLogEnabled": true,
+    "tcpHost": "192.168.31.40",
+    "tcpPort": "502",
+    "tcpType": "TCP-RTU-BUFFERED",
+    "serialPort": "/dev/ttyUSB",
+    "serialType": "RTU-BUFFERED",
+    "serialBaudrate": "9600",
+    "serialDatabits": "8",
+    "serialStopbits": "1",
+    "serialParity": "none",
+    "serialConnectionDelay": "100",
+    "serialAsciiResponseStartDelimiter": "0x3A",
+    "unit_id": 1,
+    "commandDelay": 1,
+    "clientTimeout": 2000,
+    "reconnectOnTimeout": true,
+    "reconnectTimeout": 2000,
+    "parallelUnitIdsAllowed": true,
+    "showWarnings": true,
+    "showLogs": true
+  }
+]

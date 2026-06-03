@@ -381,7 +381,18 @@
     📂 Import JSON
     <input type="file" accept=".json" style="display:none" onchange="importFromJSON(this)">
   </label>
+  <button class="add-btn" style="background:#1a1a2a;border-color:#3730a3;color:#a5b4fc" onclick="toggleTextImport()">📋 Plak tekst</button>
   <span id="import-status" style="font-size:12px;color:#64748b;align-self:center"></span>
+</div>
+
+<div id="text-import-panel" style="display:none;margin:8px 0 0;padding:12px;background:#0f0f1a;border:1px solid #3730a3;border-radius:8px">
+  <textarea id="text-import-area" placeholder="Plak hier de config-tekst (boxnaam + devices)..." style="width:100%;min-height:120px;background:#0a0a12;color:#e2e8f0;border:1px solid #334155;border-radius:6px;padding:8px;font-family:monospace;font-size:12px;resize:vertical"></textarea>
+  <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+    <button class="add-btn" style="background:#1a1a2a;border-color:#3730a3;color:#a5b4fc" onclick="previewTextImport()">🔍 Preview</button>
+    <button class="add-btn" style="background:#1a2a1a;border-color:#166534;color:#4ade80" onclick="loadTextImport()">✓ Direct inladen</button>
+    <button class="add-btn" style="background:#2a1a1a;border-color:#7f1d1d;color:#fca5a5" onclick="toggleTextImport()">Annuleer</button>
+  </div>
+  <pre id="text-import-preview" style="display:none;margin-top:8px;padding:8px;background:#0a0a12;border:1px solid #334155;border-radius:6px;color:#94a3b8;font-size:11px;max-height:240px;overflow:auto;white-space:pre-wrap"></pre>
 </div>
 
 
@@ -1049,6 +1060,11 @@
       return;
     }
 
+    applyImportResult(result, statusEl);
+  }
+
+  // Gedeeld: verwerk een geparsed resultaat (JSON of tekst) naar de UI
+  function applyImportResult(result, statusEl) {
     // Boxnaam invullen als die leeg is
     const boxNameField = document.getElementById('boxName');
     if (boxNameField && !boxNameField.value.trim() && result.boxNaam) {
@@ -1071,6 +1087,59 @@
       statusEl.textContent = `${aantalIngeladen} devices geladen.`;
       statusEl.style.color = '#4ade80';
     }
+  }
+
+  // ── Tekst-import ──────────────────────────────────────────────────────────
+  function toggleTextImport() {
+    const panel = document.getElementById('text-import-panel');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    document.getElementById('text-import-preview').style.display = 'none';
+  }
+
+  async function previewTextImport() {
+    const raw = document.getElementById('text-import-area').value;
+    const pre = document.getElementById('text-import-preview');
+    const statusEl = document.getElementById('import-status');
+    if (!raw.trim()) { statusEl.textContent = 'Plak eerst tekst.'; statusEl.style.color = '#ef4444'; return; }
+    try {
+      const res = await fetch('/api/import/parse-text?preview=1', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: raw })
+      });
+      const result = await res.json();
+      if (!result.ok) { pre.style.display = 'block'; pre.style.color = '#fca5a5'; pre.textContent = 'Fout: ' + result.error; return; }
+      const p = result.preview;
+      const lijst = p.devices.map((d, i) => {
+        if (d.kanalen) return `  ${i+1}. ${d.decoder}\n` + d.kanalen.map(k => `       • ${k.naam} (${k.fases||'?'} fase, ${k.ta ? k.ta.slice(0,28)+'…' : 'geen TA'})`).join('\n');
+        return `  ${i+1}. ${d.decoder} → "${d.naam}"`;
+      }).join('\n');
+      pre.style.display = 'block'; pre.style.color = '#94a3b8';
+      pre.textContent = `Boxnaam: ${p.boxNaam}\n\nDevices (${p.devices.length}):\n${lijst}`;
+      statusEl.textContent = 'Preview gegenereerd. Controleer en klik "Direct inladen".';
+      statusEl.style.color = '#a5b4fc';
+    } catch (e) {
+      pre.style.display = 'block'; pre.style.color = '#fca5a5'; pre.textContent = 'Server fout: ' + e.message;
+    }
+  }
+
+  async function loadTextImport() {
+    const raw = document.getElementById('text-import-area').value;
+    const statusEl = document.getElementById('import-status');
+    if (!raw.trim()) { statusEl.textContent = 'Plak eerst tekst.'; statusEl.style.color = '#ef4444'; return; }
+    statusEl.textContent = 'Verwerken...'; statusEl.style.color = '#64748b';
+    let result;
+    try {
+      const res = await fetch('/api/import/parse-text', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: raw })
+      });
+      result = await res.json();
+    } catch (e) {
+      statusEl.textContent = 'Server fout bij verwerken.'; statusEl.style.color = '#ef4444'; return;
+    }
+    if (!result.ok) { statusEl.textContent = 'Fout: ' + result.error; statusEl.style.color = '#ef4444'; return; }
+    applyImportResult(result, statusEl);
+    toggleTextImport();
   }
 
   function loadImportedDevice(d) {
