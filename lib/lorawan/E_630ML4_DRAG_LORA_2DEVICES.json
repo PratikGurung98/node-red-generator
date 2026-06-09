@@ -3,7 +3,7 @@
         "id": "6e7be3f00c585175",
         "type": "function",
         "z": "c0dcfcea1760ff7e",
-        "name": "E_630ML4_LORAWAN_2DEVICES - {meetpunt}",
+        "name": "E_630ML4_DRAG_LORA_2DEVICES - {meetpunt}",
         "func": "const Dev1 = \"ASSET_ID_START_MET_36 \"  // CH01\nconst Dev2 = \"ASSET_ID_START_MET_36 \"  // CH02\n\nconst HEADER_LEN = 3\n\n// Volgorde = volgorde van AT+COMMANDs\nconst CHANNELS = [\n    { id: 4200, scale: true },  // CMD1: Total system power (W → kW)\n    { id: 4300, scale: true },  // CMD2: Total system VAr (VAr → kVAr)\n    { id: 4600, scale: false },  // CMD3: Import active energy (kWh)\n    { id: 4500, scale: false },  // CMD4: Export active energy (kWh)\n    { id: 4200, scale: true },  // CMD5: Total system power CH02\n    { id: 4300, scale: true },  // CMD6: Total system VAr CH02\n    { id: 4600, scale: false },  // CMD7: Import active energy CH02\n    { id: 4500, scale: false },  // CMD8: Export active energy CH02\n]\n\nvar buf = (typeof msg.payload === \"string\")\n    ? Buffer.from(msg.payload, \"base64\")\n    : msg.payload\n\nif (!Buffer.isBuffer(buf) || buf.length < HEADER_LEN + 4) {\n    node.error(\"Invalid payload - te kort\", msg)\n    return null\n}\n\nconst battery = (((buf[0] << 8) | buf[1]) & 0x7fff) / 1000\nconst ts = msg.time ? new Date(msg.time).toISOString() : new Date().toISOString()\n\nfunction readF(off) {\n    if (off + 4 > buf.length) return null\n    const v = buf.readFloatBE(off)\n    if (!isFinite(v)) return null\n    return Math.round(v * 1000) / 1000\n}\n\n// 8 floats uitlezen, graceful bij kortere buffer\nconst values = []\nfor (let i = 0; i < 8; i++) {\n    const off = HEADER_LEN + i * 4\n    values.push(off + 4 <= buf.length ? readF(off) : null)\n}\n\nfunction buildDevice(dev, vals, chStart) {\n    const md = []\n\n    for (let i = 0; i < 4; i++) {\n        const ch = CHANNELS[chStart + i]\n        let val = vals[i]\n        if (val == null) continue\n        if (ch.scale) val = Math.round((val / 1000) * 1000) / 1000\n        md.push({ Id: ch.id, Val: val })\n    }\n\n    md.push({ Id: 7200, Val: battery })\n\n    if (msg.snr !== undefined)\n        md.push({ Id: 5400, Val: parseFloat(msg.snr) })\n    if (msg.rssi !== undefined)\n        md.push({ Id: 5500, Val: parseFloat(msg.rssi) })\n    if (msg.dr?.spreadFactor !== undefined)\n        md.push({ Id: 5200, Val: parseFloat(msg.dr.spreadFactor) })\n\n    return { Dev: dev, ED: [], MD: md, TS: ts }\n}\n\nconst mid = global.get(\"mid\") || 0\nlet midOffset = 0\n\nconst out1 = values.slice(0, 4).some(v => v !== null)\n    ? { ...msg, payload: { MID: mid + midOffset++, D: [buildDevice(Dev1, values.slice(0, 4), 0)] } }\n    : null\n\nconst out2 = values.slice(4, 8).some(v => v !== null)\n    ? { ...msg, payload: { MID: mid + midOffset++, D: [buildDevice(Dev2, values.slice(4, 8), 4)] } }\n    : null\n\nif (!out1) node.warn(`CH01 geen data - ${Dev1}`)\nif (!out2) node.warn(`CH02 geen data - ${Dev2}`)\n\nglobal.set(\"mid\", mid + midOffset)\n\nreturn [out1, out2]",
         "outputs": 2,
         "timeout": "",
@@ -11,7 +11,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 580,
+        "x": 590,
         "y": 380,
         "wires": [
             [],
