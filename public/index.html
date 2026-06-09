@@ -1014,7 +1014,8 @@
       if (isML4ModbusKanaal) {
         // ── MODBUS ML4: elk device = 1 kanaal ──────────────────────────────
         const isFirst = ml4KanaalIdx === 0;
-        const kanaalNaamVoorDitDevice = document.querySelector(`#device-${deviceIdx} [name="naam"]`)?.value?.trim()
+        const kanaalNaamVoorDitDevice = deviceEl?.dataset.ml4KanaalNaam
+          || document.querySelector(`#device-${deviceIdx} [name="naam"]`)?.value?.trim()
           || `Kanaal ${ml4KanaalIdx + 1}`;
 
         // Kanaal header
@@ -1035,34 +1036,41 @@
         container.appendChild(header);
 
         // ML4 meter card — enkel voor kanaal 0
+        // Kanalen 1+: geen ML4 meter card, maar elk kanaal heeft WEL eigen asset ID
+        // CT klemmen van elk kanaal krijgen HETZELFDE asset ID als het kanaal zelf
+        const kanaalAssetId = generateAssetId(50 + deviceIdx * 10);
+        const outputFields = Array.from(document.getElementById(`device-${deviceIdx}`)?.querySelectorAll('[name^="assetId_"]') || []);
+        if (outputFields[0] && !outputFields[0].value) outputFields[0].value = kanaalAssetId;
+
         if (isFirst) {
           const ml4Asset = tmpl.assets.find(a => a.role === 'communicating') || tmpl.assets[0];
           if (ml4Asset) {
-            const id = generateAssetId(50 + deviceIdx * 10);
             const assetCard = buildAssetCard({
               deviceIdx, assetKey: `device_${deviceIdx}_ml4meter`,
-              id, asset: { ...ml4Asset, printCount: 2 },
+              id: kanaalAssetId, asset: { ...ml4Asset, printCount: 2 },
               badge: '<span style="font-size:10px;background:#1a2a1a;color:#4ade80;padding:2px 6px;border-radius:4px;margin-left:6px">⚡ ML4 meter (hoofdtoestel)</span>',
               boxName, today, kanaalNaam: kanaalNaamVoorDitDevice,
             });
             const slaveEl = document.getElementById(`device-${deviceIdx}`)?.querySelector('[name="slaveAddress"]');
             const maEl = assetCard.querySelector('[data-field="var_Modbus Adres"]');
             if (slaveEl?.value && maEl) maEl.value = slaveEl.value;
-            const outputFields = Array.from(document.getElementById(`device-${deviceIdx}`)?.querySelectorAll('[name^="assetId_"]') || []);
-            if (outputFields[0] && !outputFields[0].value) outputFields[0].value = id;
             container.appendChild(assetCard);
           }
         }
 
-        // CT klemmen card — voor elk kanaal
-        const ctId = generateAssetId(50 + deviceIdx * 10 + 5);
+        // CT klemmen card — zelfde ID als het kanaal (CT's horen bij dit meetpunt)
         const ctCard = buildAssetCard({
           deviceIdx, assetKey: `device_${deviceIdx}_ct`,
-          id: ctId,
+          id: kanaalAssetId,
           asset: { role: 'dumb', typeNumber: 'ESCT CT klem set (3×)', varProps: ['TA', 'Fases'], printCount: 3 },
           badge: '<span style="font-size:10px;background:#1a1a2a;color:#a5b4fc;padding:2px 6px;border-radius:4px;margin-left:6px">🔌 CT klemmen</span>',
           boxName, today, kanaalNaam: kanaalNaamVoorDitDevice,
         });
+        // TA en Fases invullen vanuit import (opgeslagen in dataset)
+        const ctTaEl    = ctCard.querySelector('[data-field="var_TA"]');
+        const ctFasesEl = ctCard.querySelector('[data-field="var_Fases"]');
+        if (ctTaEl    && deviceEl?.dataset.ml4Ta)    ctTaEl.value    = deviceEl.dataset.ml4Ta;
+        if (ctFasesEl && deviceEl?.dataset.ml4Fases) ctFasesEl.value = deviceEl.dataset.ml4Fases;
         container.appendChild(ctCard);
 
       } else {
@@ -1400,6 +1408,9 @@
     if (d._ml4KanaalIndex !== undefined) {
       deviceEl.dataset.ml4KanaalIndex   = d._ml4KanaalIndex;
       deviceEl.dataset.ml4TotaalKanalen = d._ml4TotaalKanalen;
+      deviceEl.dataset.ml4KanaalNaam    = d.naam || '';
+      if (d._ta)    deviceEl.dataset.ml4Ta    = d._ta;
+      if (d._fases) deviceEl.dataset.ml4Fases = String(d._fases);
     }
 
     // Decoder selecteren
@@ -2306,6 +2317,15 @@
       const defaultTmpl = AM_DEFAULTS.find(t => t.key === key);
       // Device asset (van decoder selectie)
       const isDeviceCard = key?.startsWith('device_');
+
+      // Kanaal headers zijn geen assets — overslaan
+      if (key?.includes('_kanaal_header')) return;
+
+      // CT klemmen met zelfde ID als een al-toegevoegde asset (bv ML4 meter kanaal 0) — overslaan
+      if (key?.endsWith('_ct')) {
+        const sameIdExists = assets.some(a => a.id === id);
+        if (sameIdExists) return;
+      }
 
       if (!defaultTmpl && !isDeviceCard) return;
 
