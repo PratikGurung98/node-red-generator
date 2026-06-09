@@ -826,10 +826,17 @@
             <option value="">— Category —</option>
             ${categories.enerseeCategories.map(c => `<option value="${c}">${c}</option>`).join('')}
           </select>
-          <select id="dt-name-${idx}-${dt.Id}">
-            <option value="">— Enersee naam —</option>
-            ${categories.enerseeNames.map(n => `<option value="${n}">${n}</option>`).join('')}
-          </select>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <select id="dt-name-${idx}-${dt.Id}" onchange="onDtNameSelect(${idx},${dt.Id})">
+              <option value="">— Enersee naam —</option>
+              ${categories.enerseeNames.map(n => `<option value="${n}">${n}</option>`).join('')}
+            </select>
+            <div style="display:flex;align-items:center;gap:4px">
+              <input type="text" id="dt-custom-${idx}-${dt.Id}" placeholder="Of typ custom naam..."
+                style="font-size:11px;padding:3px 6px;flex:1;background:#0a0d14;border:1px solid #374151;border-radius:4px;color:#e2e8f0"
+                oninput="onDtCustomInput(${idx},${dt.Id})">
+            </div>
+          </div>
         </div>
       </div>
     `).join('');
@@ -839,6 +846,27 @@
     const checked   = document.getElementById(`dt-vis-${idx}-${dtId}`)?.checked;
     const configDiv = document.getElementById(`dt-config-${idx}-${dtId}`);
     if (configDiv) configDiv.style.display = checked ? 'flex' : 'none';
+  }
+
+  // Dropdown selecteert naam → wis custom veld
+  function onDtNameSelect(idx, dtId) {
+    const sel = document.getElementById(`dt-name-${idx}-${dtId}`);
+    const custom = document.getElementById(`dt-custom-${idx}-${dtId}`);
+    if (sel?.value && custom) custom.value = '';
+  }
+
+  // Custom veld ingetypt → reset dropdown naar leeg
+  function onDtCustomInput(idx, dtId) {
+    const custom = document.getElementById(`dt-custom-${idx}-${dtId}`);
+    const sel    = document.getElementById(`dt-name-${idx}-${dtId}`);
+    if (custom?.value && sel) sel.value = '';
+  }
+
+  // Lees de effectieve naam: custom veld heeft prioriteit over dropdown
+  function getDtName(idx, dtId) {
+    const custom = document.getElementById(`dt-custom-${idx}-${dtId}`)?.value?.trim();
+    if (custom) return custom;
+    return document.getElementById(`dt-name-${idx}-${dtId}`)?.value || '';
   }
 
   function getEnerseeDataTypes(idx) {
@@ -855,7 +883,7 @@
       if (!vis) return null;
       return {
         dataTypeId: dtId,
-        name:       document.getElementById(`dt-name-${idx}-${dtId}`)?.value || '',
+        name:       getDtName(idx, dtId),
         category:   document.getElementById(`dt-cat-${idx}-${dtId}`)?.value  || '',
         visible:    true,
       };
@@ -956,79 +984,241 @@
     const emptyMsg = document.getElementById('amEmptyMsg');
     if (emptyMsg) emptyMsg.style.display = 'none';
 
-    tmpl.assets.forEach((asset, assetIdx) => {
-      const id = generateAssetId(50 + deviceIdx * 10 + assetIdx);
-      const card = document.createElement('div');
-      card.dataset.key       = `device_${deviceIdx}_${assetIdx}`;
-      card.dataset.assetId   = id;
-      card.dataset.deviceIdx = deviceIdx;
-      card.dataset.pictureUrl = asset.pictureUrl || 'https://placehold.net/400x400.png';
-      card.dataset.typeNumber = asset.typeNumber || '';
-      card.style.cssText = 'background:#0f1117;border:1px solid #2d3148;border-radius:8px;padding:12px';
+    // Detecteer ML4 multi-kanaal:
+    // 1. LoRa multi-output (decoder heeft meerdere outputs, naam bevat ML4)
+    // 2. Modbus multi-kanaal: parser heeft _ml4KanaalIndex gezet op het device element
+    const deviceEl = document.getElementById(`device-${deviceIdx}`);
+    const outputs = parseInt(document.getElementById(`decoder-outputs-${deviceIdx}`)?.value || '1');
+    const isML4Lora   = outputs > 1 && /630ML4|ML4/i.test(decoderName || '');
+    const ml4KanaalIdx = deviceEl?.dataset.ml4KanaalIndex !== undefined
+      ? parseInt(deviceEl.dataset.ml4KanaalIndex)
+      : -1;
+    const ml4Totaal = deviceEl?.dataset.ml4TotaalKanalen !== undefined
+      ? parseInt(deviceEl.dataset.ml4TotaalKanalen)
+      : 0;
+    const isML4ModbusKanaal = ml4KanaalIdx >= 0;
+    const isML4Multi = isML4Lora || isML4ModbusKanaal;
 
-      const roleLabel = asset.role === 'communicating' ? '' : '<span style="font-size:10px;color:#f59e0b;margin-left:6px">stom toestel</span>';
+    // Haal kanaal namen op (ingevuld via import of handmatig)
+    const kanaalNamen = [];
+    for (let i = 0; i < outputs; i++) {
+      const v = document.querySelector(`#device-${deviceIdx} [name="naam_${i}"]`)?.value?.trim()
+             || document.querySelector(`#device-${deviceIdx} [name="naam"]`)?.value?.trim()
+             || `Kanaal ${i + 1}`;
+      kanaalNamen.push(v);
+    }
 
-      card.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <div>
-            <span style="font-weight:600;color:#a5b4fc;font-size:13px">${asset.typeNumber}</span>
-            ${roleLabel}
-            <span style="color:#374151;font-size:10px;margin-left:8px">ID: ${id}</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:10px;color:#64748b">×</span>
-            <input type="number" data-field="printCount" value="${asset.printCount || 2}" min="0" max="99" style="width:40px;font-size:12px;padding:3px 5px;text-align:center;box-sizing:border-box">
-            <button onclick="amRemoveDefault('device_${deviceIdx}_${assetIdx}')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;padding:0 4px">✕</button>
-          </div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-          <div>
-            <div style="font-size:10px;color:#64748b;margin-bottom:2px">Label</div>
-            <input type="text" data-field="label" placeholder="Label..." style="font-size:12px;padding:5px 8px;width:100%;box-sizing:border-box">
-          </div>
-          <div>
-            <div style="font-size:10px;color:#64748b;margin-bottom:2px">Name</div>
-            <input type="text" data-field="name" placeholder="Name..." style="font-size:12px;padding:5px 8px;width:100%;box-sizing:border-box">
-          </div>
-          ${(asset.varProps || []).map(p => `
-          <div>
-            <div style="font-size:10px;color:#64748b;margin-bottom:2px">${p}</div>
-            <input type="text" data-field="var_${p}" placeholder="${p}..." style="font-size:12px;padding:5px 8px;width:100%;box-sizing:border-box">
-          </div>`).join('')}
-        </div>
-        ${asset.fixedProps?.length ? `<div style="margin-top:8px;font-size:10px;color:#374151">${asset.fixedProps.map(p => `${p.name}: ${p.value}`).join(' · ')}</div>` : ''}
-        <div style="margin-top:6px;font-size:10px;color:#374151">Box/Project: ${boxName || '(nog niet ingevuld)'} · Datum: ${today}</div>
-      `;
+    if (isML4Multi) {
+      // ── ML4 multi-kanaal: speciale structuur ──────────────────────────────
 
-      // Als communicating en EUI beschikbaar → link aan het device EUI veld
-      // EUI sync voor communicating device
-      if (asset.role === 'communicating') {
-        const euiInput = card.querySelector('[data-field="var_EUI"]');
-        if (euiInput) {
-          const deviceEui = document.getElementById(`device-${deviceIdx}`)?.querySelector('[name="deveui"]');
-          if (deviceEui?.value) euiInput.value = deviceEui.value;
+      if (isML4ModbusKanaal) {
+        // ── MODBUS ML4: elk device = 1 kanaal ──────────────────────────────
+        const isFirst = ml4KanaalIdx === 0;
+        const kanaalNaamVoorDitDevice = document.querySelector(`#device-${deviceIdx} [name="naam"]`)?.value?.trim()
+          || `Kanaal ${ml4KanaalIdx + 1}`;
+
+        // Kanaal header
+        const header = document.createElement('div');
+        header.dataset.deviceIdx = deviceIdx;
+        header.dataset.key = `device_${deviceIdx}_kanaal_header`;
+        header.style.cssText = `background:${isFirst ? '#0f1a0f' : '#0a0d14'};border:1px solid ${isFirst ? '#166534' : '#2d3148'};border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap`;
+        header.innerHTML = `
+          <span style="font-weight:700;color:${isFirst ? '#4ade80' : '#94a3b8'};font-size:12px">
+            KANAAL ${ml4KanaalIdx + 1}/${ml4Totaal}: ${kanaalNaamVoorDitDevice}
+          </span>
+          ${isFirst
+            ? '<span style="font-size:11px;background:#166534;color:#4ade80;padding:2px 8px;border-radius:4px">⚡ ML4 meter + CT klemmen</span>'
+            : '<span style="font-size:11px;background:#1e293b;color:#64748b;padding:2px 8px;border-radius:4px">🔌 Enkel CT klemmen</span>'
+          }
+          <span style="font-size:11px;color:#475569">${isFirst ? '🖨️ ML4: ×2 · CT: ×3' : '🖨️ CT klemmen: ×3'}</span>
+        `;
+        container.appendChild(header);
+
+        // ML4 meter card — enkel voor kanaal 0
+        if (isFirst) {
+          const ml4Asset = tmpl.assets.find(a => a.role === 'communicating') || tmpl.assets[0];
+          if (ml4Asset) {
+            const id = generateAssetId(50 + deviceIdx * 10);
+            const assetCard = buildAssetCard({
+              deviceIdx, assetKey: `device_${deviceIdx}_ml4meter`,
+              id, asset: { ...ml4Asset, printCount: 2 },
+              badge: '<span style="font-size:10px;background:#1a2a1a;color:#4ade80;padding:2px 6px;border-radius:4px;margin-left:6px">⚡ ML4 meter (hoofdtoestel)</span>',
+              boxName, today, kanaalNaam: kanaalNaamVoorDitDevice,
+            });
+            const slaveEl = document.getElementById(`device-${deviceIdx}`)?.querySelector('[name="slaveAddress"]');
+            const maEl = assetCard.querySelector('[data-field="var_Modbus Adres"]');
+            if (slaveEl?.value && maEl) maEl.value = slaveEl.value;
+            const outputFields = Array.from(document.getElementById(`device-${deviceIdx}`)?.querySelectorAll('[name^="assetId_"]') || []);
+            if (outputFields[0] && !outputFields[0].value) outputFields[0].value = id;
+            container.appendChild(assetCard);
+          }
         }
+
+        // CT klemmen card — voor elk kanaal
+        const ctId = generateAssetId(50 + deviceIdx * 10 + 5);
+        const ctCard = buildAssetCard({
+          deviceIdx, assetKey: `device_${deviceIdx}_ct`,
+          id: ctId,
+          asset: { role: 'dumb', typeNumber: 'ESCT CT klem set (3×)', varProps: ['TA', 'Fases'], printCount: 3 },
+          badge: '<span style="font-size:10px;background:#1a1a2a;color:#a5b4fc;padding:2px 6px;border-radius:4px;margin-left:6px">🔌 CT klemmen</span>',
+          boxName, today, kanaalNaam: kanaalNaamVoorDitDevice,
+        });
+        container.appendChild(ctCard);
+
+      } else {
+        // ── LORA ML4: alle kanalen in 1 device ─────────────────────────────
+        const commAsset = tmpl.assets.find(a => a.role === 'communicating');
+        if (commAsset) {
+          const id = generateAssetId(50 + deviceIdx * 10);
+          const card = buildAssetCard({
+            deviceIdx, assetKey: `device_${deviceIdx}_comm`,
+            id, asset: commAsset,
+            badge: '<span style="font-size:10px;background:#1e3a5f;color:#60a5fa;padding:2px 6px;border-radius:4px;margin-left:6px">📡 Dragino (gedeeld voor alle kanalen)</span>',
+            boxName, today,
+          });
+          const euiInput = card.querySelector('[data-field="var_EUI"]');
+          const deviceEui = document.getElementById(`device-${deviceIdx}`)?.querySelector('[name="deveui"]');
+          if (euiInput && deviceEui?.value) euiInput.value = deviceEui.value;
+          container.appendChild(card);
+        }
+
+        kanaalNamen.forEach((kanaalNaam, kIdx) => {
+          const isFirst = kIdx === 0;
+          const hdr = document.createElement('div');
+          hdr.dataset.deviceIdx = deviceIdx;
+          hdr.dataset.key = `device_${deviceIdx}_kanaal_header_${kIdx}`;
+          hdr.style.cssText = `background:${isFirst ? '#0f1a0f' : '#0a0d14'};border:1px solid ${isFirst ? '#166534' : '#2d3148'};border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap`;
+          hdr.innerHTML = `
+            <span style="font-weight:700;color:${isFirst ? '#4ade80' : '#94a3b8'};font-size:12px">KANAAL ${kIdx + 1}: ${kanaalNaam}</span>
+            ${isFirst
+              ? '<span style="font-size:11px;background:#166534;color:#4ade80;padding:2px 8px;border-radius:4px">ML4 meter + CT klemmen</span>'
+              : '<span style="font-size:11px;background:#1e293b;color:#64748b;padding:2px 8px;border-radius:4px">Enkel CT klemmen</span>'
+            }
+            <span style="font-size:11px;color:#475569">${isFirst ? '🖨️ ML4: ×2 · CT: ×3' : '🖨️ CT: ×3'}</span>
+          `;
+          container.appendChild(hdr);
+
+          if (isFirst) {
+            const ml4Asset = tmpl.assets.find(a => a.role !== 'communicating');
+            if (ml4Asset) {
+              const id = generateAssetId(50 + deviceIdx * 10 + 1);
+              const assetCard = buildAssetCard({
+                deviceIdx, assetKey: `device_${deviceIdx}_ml4_${kIdx}`,
+                id, asset: { ...ml4Asset, printCount: 2 },
+                badge: '<span style="font-size:10px;background:#1a2a1a;color:#4ade80;padding:2px 6px;border-radius:4px;margin-left:6px">⚡ ML4 meter (hoofdtoestel)</span>',
+                boxName, today, kanaalNaam,
+              });
+              const outputFields = Array.from(document.getElementById(`device-${deviceIdx}`)?.querySelectorAll('[name^="assetId_"]') || []);
+              if (outputFields[kIdx] && !outputFields[kIdx].value) outputFields[kIdx].value = id;
+              container.appendChild(assetCard);
+            }
+          } else {
+            const id = generateAssetId(50 + deviceIdx * 10 + 1 + kIdx);
+            const outputFields = Array.from(document.getElementById(`device-${deviceIdx}`)?.querySelectorAll('[name^="assetId_"]') || []);
+            if (outputFields[kIdx] && !outputFields[kIdx].value) outputFields[kIdx].value = id;
+          }
+
+          const ctId = generateAssetId(50 + deviceIdx * 10 + 5 + kIdx);
+          const ctCard = buildAssetCard({
+            deviceIdx, assetKey: `device_${deviceIdx}_ct_${kIdx}`,
+            id: ctId,
+            asset: { role: 'dumb', typeNumber: 'ESCT CT klem set (3×)', varProps: ['TA', 'Fases'], printCount: 3 },
+            badge: '<span style="font-size:10px;background:#1a1a2a;color:#a5b4fc;padding:2px 6px;border-radius:4px;margin-left:6px">🔌 CT klemmen</span>',
+            boxName, today, kanaalNaam,
+          });
+          container.appendChild(ctCard);
+        });
       }
 
-      // Asset ID terugschrijven naar device card:
-      // - communicating (bv Dragino) → assetId_0 ALLEEN als er geen stom toestellen zijn
-      // - stom toestel → assetId_0, assetId_1, ... op volgorde
-      const outputFields = Array.from(document.getElementById(`device-${deviceIdx}`)?.querySelectorAll('[name^="assetId_"]') || []);
-      const stomCount = tmpl.assets.filter(a => a.role !== 'communicating').length;
-      if (stomCount === 0 && asset.role === 'communicating') {
-        if (outputFields[0] && !outputFields[0].value) outputFields[0].value = id;
-      } else if (asset.role !== 'communicating') {
-        const stomIdx = tmpl.assets.slice(0, assetIdx).filter(a => a.role !== 'communicating').length;
-        if (outputFields[stomIdx] && !outputFields[stomIdx].value) outputFields[stomIdx].value = id;
-      }
+    } else {
+      // ── Standaard (niet-ML4 multi): origineel gedrag ──────────────────────
+      tmpl.assets.forEach((asset, assetIdx) => {
+        const id = generateAssetId(50 + deviceIdx * 10 + assetIdx);
+        const roleLabel = asset.role === 'communicating' ? '' : '<span style="font-size:10px;color:#f59e0b;margin-left:6px">stom toestel</span>';
+        const card = buildAssetCard({
+          deviceIdx, assetKey: `device_${deviceIdx}_${assetIdx}`,
+          id, asset, badge: roleLabel, boxName, today,
+        });
 
-      container.appendChild(card);
-    });
+        // EUI sync voor communicating device
+        if (asset.role === 'communicating') {
+          const euiInput = card.querySelector('[data-field="var_EUI"]');
+          const deviceEui = document.getElementById(`device-${deviceIdx}`)?.querySelector('[name="deveui"]');
+          if (euiInput && deviceEui?.value) euiInput.value = deviceEui.value;
+        }
+
+        // Modbus adres sync
+        if (asset.varProps?.includes('Modbus Adres')) {
+          const slaveEl = document.getElementById(`device-${deviceIdx}`)?.querySelector('[name="slaveAddress"]');
+          const maEl = card.querySelector('[data-field="var_Modbus Adres"]');
+          if (slaveEl?.value && maEl) maEl.value = slaveEl.value;
+        }
+
+        // Asset ID terugschrijven
+        const outputFields = Array.from(document.getElementById(`device-${deviceIdx}`)?.querySelectorAll('[name^="assetId_"]') || []);
+        const stomCount = tmpl.assets.filter(a => a.role !== 'communicating').length;
+        if (stomCount === 0 && asset.role === 'communicating') {
+          if (outputFields[0] && !outputFields[0].value) outputFields[0].value = id;
+        } else if (asset.role !== 'communicating') {
+          const stomIdx = tmpl.assets.slice(0, assetIdx).filter(a => a.role !== 'communicating').length;
+          if (outputFields[stomIdx] && !outputFields[stomIdx].value) outputFields[stomIdx].value = id;
+        }
+
+        container.appendChild(card);
+      });
+    }
 
     // Zorg dat de aanmaken knop zichtbaar is
     const actions = document.getElementById('amDefaultActions');
     if (actions) actions.style.display = 'flex';
   }
+
+  // Helper: bouw een asset card DOM element
+  function buildAssetCard({ deviceIdx, assetKey, id, asset, badge, boxName, today, kanaalNaam }) {
+    const card = document.createElement('div');
+    card.dataset.key       = assetKey;
+    card.dataset.assetId   = id;
+    card.dataset.deviceIdx = deviceIdx;
+    card.dataset.pictureUrl = asset.pictureUrl || 'https://placehold.net/400x400.png';
+    card.dataset.typeNumber = asset.typeNumber || '';
+    card.style.cssText = 'background:#0f1117;border:1px solid #2d3148;border-radius:8px;padding:12px';
+
+    card.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px">
+          <span style="font-weight:600;color:#a5b4fc;font-size:13px">${asset.typeNumber}</span>
+          ${badge || ''}
+          <span style="color:#374151;font-size:10px;margin-left:4px">ID: ${id}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:10px;color:#64748b">×</span>
+          <input type="number" data-field="printCount" value="${asset.printCount || 2}" min="0" max="99"
+            style="width:40px;font-size:12px;padding:3px 5px;text-align:center;box-sizing:border-box">
+          <button onclick="amRemoveDefault('${assetKey}')"
+            style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;padding:0 4px">✕</button>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div>
+          <div style="font-size:10px;color:#64748b;margin-bottom:2px">Label</div>
+          <input type="text" data-field="label" placeholder="Label..." style="font-size:12px;padding:5px 8px;width:100%;box-sizing:border-box">
+        </div>
+        <div>
+          <div style="font-size:10px;color:#64748b;margin-bottom:2px">Name</div>
+          <input type="text" data-field="name" value="${kanaalNaam || ''}" placeholder="Name..." style="font-size:12px;padding:5px 8px;width:100%;box-sizing:border-box">
+        </div>
+        ${(asset.varProps || []).map(p => `
+        <div>
+          <div style="font-size:10px;color:#64748b;margin-bottom:2px">${p}</div>
+          <input type="text" data-field="var_${p}" placeholder="${p}..." style="font-size:12px;padding:5px 8px;width:100%;box-sizing:border-box">
+        </div>`).join('')}
+      </div>
+      ${asset.fixedProps?.length ? `<div style="margin-top:8px;font-size:10px;color:#374151">${asset.fixedProps.map(p => `${p.name}: ${p.value}`).join(' · ')}</div>` : ''}
+      <div style="margin-top:6px;font-size:10px;color:#374151">Box/Project: ${boxName || '(nog niet ingevuld)'} · Datum: ${today}</div>
+    `;
+    return card;
+  }
+
   async function importFromJSON(input) {
     const file = input.files[0];
     if (!file) return;
@@ -1204,6 +1394,13 @@
     const commType = d.commType || 'lorawan';
     addDevice(commType);
     const idx = deviceCount;
+
+    // ML4 multi-kanaal info opslaan op het device element
+    const deviceEl = document.getElementById(`device-${idx}`);
+    if (d._ml4KanaalIndex !== undefined) {
+      deviceEl.dataset.ml4KanaalIndex   = d._ml4KanaalIndex;
+      deviceEl.dataset.ml4TotaalKanalen = d._ml4TotaalKanalen;
+    }
 
     // Decoder selecteren
     if (d.template) {

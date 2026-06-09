@@ -118,9 +118,12 @@ function verwerkDevice(device, mappings) {
 
   // === MODBUS MULTI-KANAAL (ML4 Modbus) ===
   // → N aparte devices, elk eigen naam + modbus adres
+  // _ml4KanaalIndex: positie in de groep (0 = hoofdtoestel met ML4 meter, 1+ = enkel CT's)
+  // _ml4TotaalKanalen: totaal aantal kanalen in de groep
   if (commType === 'modbus' && isMulti) {
     const lib = resolveLib(mapping, kanalen.length);
-    return kanalen.map(kanaal => {
+    const totaal = kanalen.length;
+    return kanalen.map((kanaal, kIdx) => {
       const naam = typeof kanaal === 'string' ? kanaal : kanaal.naam;
       const ta = typeof kanaal === 'object' ? (kanaal.ta || null) : null;
       const fases = typeof kanaal === 'object' ? (kanaal.fases || null) : null;
@@ -137,7 +140,9 @@ function verwerkDevice(device, mappings) {
         meterCategory: '',
         enerseeDataTypes: [],
         _ta: ta,
-        _fases: fases
+        _fases: fases,
+        _ml4KanaalIndex: kIdx,        // 0 = eerste (heeft ML4 meter), 1+ = enkel CT klemmen
+        _ml4TotaalKanalen: totaal,    // totaal kanalen in de ML4 groep
       };
     });
   }
