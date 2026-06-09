@@ -278,6 +278,12 @@ return msg;`,
   // Één link out node op de Lora tab — alle decoders gaan hiernaar
   const loraLinkOutId = uid();
 
+  // Layout constants
+  const ROW_START_X  = 700;  // x waar de entry node van elke decoder begint
+  const ROW_START_Y  = 80;   // y van device 0
+  const ROW_STEP_Y   = 160;  // verticale afstand tussen devices
+  const LINK_OUT_X   = 1300; // vaste x voor de gedeelde link out
+
   // One decoder per device
   devices.forEach((device, idx) => {
     const libNodes = loadLib('lorawan', device.template);
@@ -303,6 +309,12 @@ return msg;`,
       !n.name?.toLowerCase().includes('parse')
     );
 
+    // Normaliseer x/y: trek entry node positie eraf zodat entry op (0,0) staat,
+    // dan plaatsen we alles relatief aan (ROW_START_X, ROW_START_Y + idx * ROW_STEP_Y)
+    const entryX = entryNode.x ?? 0;
+    const entryY = entryNode.y ?? 0;
+    const rowY   = ROW_START_Y + idx * ROW_STEP_Y;
+
     decoderNodes.forEach(n => {
       n.z = tabId;
       if (n.type === 'function' && n.func) {
@@ -317,9 +329,10 @@ return msg;`,
       if (n === formatter) {
         n.wires = [[loraLinkOutId]];
       }
+      // Positioneer: normaliseer relatief aan entry node, dan verschuif naar rij
       if (n.x !== undefined) {
-        n.x += 400;
-        n.y = 80 + idx * 120;
+        n.x = ROW_START_X + (n.x - entryX);
+        n.y = rowY       + (n.y - entryY);
       }
     });
 
@@ -336,7 +349,7 @@ return msg;`,
   });
 
   // Gedeelde link out node
-  const loraLinkOutY = devices.length === 1 ? 80 : Math.round((80 + (devices.length - 1) * 120) / 2);
+  const loraLinkOutY = devices.length === 1 ? ROW_START_Y : Math.round((ROW_START_Y + (devices.length - 1) * ROW_STEP_Y) / 2);
   nodes.push({
     id: loraLinkOutId,
     type: 'link out',
@@ -344,7 +357,7 @@ return msg;`,
     name: 'LINK2IOTHUB',
     mode: 'link',
     links: [],
-    x: 1260, y: loraLinkOutY,
+    x: LINK_OUT_X, y: loraLinkOutY,
     wires: [],
   });
 

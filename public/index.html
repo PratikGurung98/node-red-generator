@@ -442,6 +442,11 @@
   let lastFlow       = null;
   let lastSQL        = null;
   let lastEnerseeSQL = null;
+  // Download tracking voor beforeunload checklist
+  let flowDownloaded    = false;
+  let sqlDownloaded     = false;
+  let enerseeSQLDownloaded = false;
+  let hasUnsavedWork    = false;
   let allBuildings      = [];
   let allMeterTypes     = [];
   let allMeterTypeLinks = [];
@@ -596,6 +601,8 @@
   // ── Device cards ──────────────────────────────────────────────────────────
 
   function addDevice(commType) {
+    // Waarschuw als standaard items nog niet gegenereerd zijn
+    checkStandaardItemsWarning();
     deviceCount++;
     const idx = deviceCount;
     const div = document.createElement('div');
@@ -1681,12 +1688,17 @@
     a.href = URL.createObjectURL(blob);
     a.download = filename;
     a.click();
+    // Track what got downloaded
+    if (filename.endsWith('.json')) flowDownloaded = true;
+    if (filename.includes('_gateway')) sqlDownloaded = true;
+    if (filename.includes('_enersee')) enerseeSQLDownloaded = true;
   }
 
   function downloadFlow() {
     if (!lastFlow) return;
     const boxName = document.getElementById('boxName').value.trim() || 'flow';
     downloadSQL(JSON.stringify(lastFlow, null, 2), `${boxName}.json`);
+    flowDownloaded = true;
   }
 
   function copySql(elId, btnId) {
@@ -2029,11 +2041,20 @@
             <div style="font-size:10px;color:#64748b;margin-bottom:2px">Name</div>
             <input type="text" value="${tmpl.name}" data-field="name" style="font-size:12px;padding:5px 8px;width:100%;box-sizing:border-box">
           </div>
-          ${tmpl.varProps.map(p => `
+          ${tmpl.varProps.map(p => {
+            // VlegelBox SN: 3601-, Gateway SN: 6041-
+            let snPrefix = '';
+            if (p.name === 'Serial Number') {
+              if (tmpl.key === 'vlegelbox') snPrefix = '3601-';
+              else if (tmpl.key === 'gateway') snPrefix = '6041-';
+            }
+            const val = snPrefix || p.value;
+            return `
           <div>
             <div style="font-size:10px;color:#64748b;margin-bottom:2px">${p.name}</div>
-            <input type="text" value="${p.value}" data-field="var_${p.name}" placeholder="${p.name}..." style="font-size:12px;padding:5px 8px;width:100%;box-sizing:border-box">
-          </div>`).join('')}
+            <input type="text" value="${val}" data-field="var_${p.name}" placeholder="${p.name}..." style="font-size:12px;padding:5px 8px;width:100%;box-sizing:border-box">
+          </div>`;
+          }).join('')}
         </div>
         ${tmpl.fixedProps.length ? `<div style="margin-top:8px;font-size:10px;color:#374151">${tmpl.fixedProps.map(p => `${p.name}: ${p.value}`).join(' · ')}</div>` : ''}
         <div style="margin-top:6px;font-size:10px;color:#374151">Box/Project: ${boxName || '(boxnaam nog niet ingevuld)'} · Datum: ${today}</div>
@@ -2041,8 +2062,7 @@
       container.appendChild(card);
     });
 
-    // AM103L als LoRaWAN device toevoegen met eigen uniek ID
-    addAM103LDevice(generateAssetId(3));
+    // Environment (AM103L) wordt NIET automatisch toegevoegd — zit al in de import config
   }
 
   function amRemoveDefault(key) {
@@ -2292,6 +2312,89 @@
       btn.textContent = 'Bevestigen';
     }
   }
+
+  // ── Standaard items warning ───────────────────────────────────────────────
+
+  // Toon waarschuwing als devices worden toegevoegd zonder standaard items
+  // "Niet meer tonen" wordt bewaard in sessionStorage (reset bij page reload)
+  function checkStandaardItemsWarning() {
+    if (sessionStorage.getItem('skipStandaardWarning') === '1') return;
+
+    // Check of standaard items al zijn gegenereerd
+    const hasDefaults = document.querySelector('#amDefaultAssets [data-key]');
+    if (hasDefaults) return;
+
+    // Toon popup
+    const overlay = document.createElement('div');
+    overlay.id = 'standaardWarningOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center';
+    overlay.innerHTML = `
+      <div style="background:#1a1f2e;border:1px solid #f59e0b;border-radius:12px;padding:28px 32px;max-width:440px;width:90%">
+        <div style="font-size:18px;font-weight:700;color:#f59e0b;margin-bottom:10px">⚠️ Standaard items niet gegenereerd</div>
+        <div style="font-size:13px;color:#94a3b8;line-height:1.6;margin-bottom:16px">
+          Je voegt een device toe zonder eerst op <strong style="color:#a5b4fc">🔧 Standaard Vlegelbox items</strong> te klikken.<br><br>
+          Hierdoor ontbreken de <strong>VlegelBox, Gateway en Waveshare</strong> assets, en staan de Vlegelbox Asset ID en Gateway Meter Asset ID leeg in stap 3.
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px">
+          <input type="checkbox" id="skipStandaardCheck" style="width:14px;height:14px;cursor:pointer">
+          <label for="skipStandaardCheck" style="font-size:12px;color:#64748b;cursor:pointer">Niet meer tonen (tot pagina herlaadt)</label>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button onclick="standaardWarningClose(false)" style="flex:1;padding:10px;background:#166534;color:#4ade80;border:1px solid #15803d;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">
+            🔧 Eerst standaard items genereren
+          </button>
+          <button onclick="standaardWarningClose(true)" style="flex:1;padding:10px;background:#1e293b;color:#94a3b8;border:1px solid #374151;border-radius:6px;cursor:pointer;font-size:13px">
+            Toch doorgaan
+          </button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+  }
+
+  function standaardWarningClose(proceed) {
+    if (document.getElementById('skipStandaardCheck')?.checked) {
+      sessionStorage.setItem('skipStandaardWarning', '1');
+    }
+    document.getElementById('standaardWarningOverlay')?.remove();
+    if (!proceed) {
+      // Scroll naar de standaard items knop
+      document.querySelector('[onclick="amGenerateDefaults()"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
+  // Patch addDevice om de warning te triggeren
+  const _origAddDevice = addDevice;
+  // (addDevice wordt direct overschreven na definitie — zie hieronder)
+
+  // ── Tabblad sluiten / refresh warning ────────────────────────────────────
+
+  function getUnfinishedChecklist() {
+    const items = [];
+    const boxName = document.getElementById('boxName')?.value?.trim();
+    if (!boxName) return []; // Niets ingevuld = geen relevante warning
+
+    if (lastFlow && !flowDownloaded) items.push('Node-RED flow gegenereerd maar nog niet gedownload');
+    if (lastSQL && !sqlDownloaded)   items.push('Gateway SQL gegenereerd maar nog niet gedownload');
+    if (lastEnerseeSQL && !enerseeSQLDownloaded) items.push('Enersee SQL gegenereerd maar nog niet gedownload');
+    if (deviceCount > 0 && !lastFlow) items.push('Devices geconfigureerd maar flow nog niet gegenereerd');
+    return items;
+  }
+
+  window.addEventListener('beforeunload', (e) => {
+    const checklist = getUnfinishedChecklist();
+    if (checklist.length === 0) return;
+
+    // Browsers tonen eigen tekst bij beforeunload, maar we zetten toch iets
+    const msg = 'Let op: ' + checklist.join(' | ');
+    e.preventDefault();
+    e.returnValue = msg;
+    return msg;
+  });
+
+  // ── Unsaved work tracking ─────────────────────────────────────────────────
+  // Markeer zodra er iets ingevuld wordt
+  document.addEventListener('input', () => { hasUnsavedWork = true; });
 
   // Start
   init();
